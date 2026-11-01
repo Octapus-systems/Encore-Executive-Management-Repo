@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Bell } from 'lucide-react';
+import { Bell, Phone, User } from 'lucide-react';
 import { api } from '@/lib/api';
 import { relative } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,17 @@ export function Alerts() {
                 <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', n.read_at ? 'bg-transparent' : 'bg-primary')} />
                 <div className="min-w-0 flex-1">
                   <div className="flex justify-between gap-2"><div className="font-semibold">{n.title}</div><div className="shrink-0 text-xs text-muted-foreground">{relative(n.created_at)}</div></div>
+                  {(n.customer_name || n.customer_phone) && (
+                    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm">
+                      {n.customer_name && <span className="inline-flex items-center gap-1 font-medium text-ink"><User className="h-3.5 w-3.5 text-primary" />{n.customer_name}</span>}
+                      {n.customer_phone && (
+                        <span role="link" tabIndex={0} title="Call" onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `tel:${n.customer_phone}`; }}
+                          className="inline-flex cursor-pointer items-center gap-1 font-medium text-primary hover:underline">
+                          <Phone className="h-3.5 w-3.5" />{n.customer_phone}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   <div className="mt-0.5 text-sm text-muted-foreground">{n.body}</div>
                 </div>
               </div>
