@@ -9,13 +9,13 @@ import { cn } from '@/lib/utils';
 
 // One colour per stage: the tab's dot (legend), the row tint and the status pill all match.
 const STAGES = [
-  { label: 'Requests', statuses: ['pending', 'under_review', 'clarification_needed', 'change_requested'], dot: 'bg-amber-500', row: 'bg-amber-50 hover:bg-amber-100 border-l-amber-500', pill: 'bg-amber-100 text-amber-900' },
-  { label: 'Quoted', statuses: ['quote_sent', 'quote_accepted'], dot: 'bg-blue-500', row: 'bg-blue-50 hover:bg-blue-100 border-l-blue-500', pill: 'bg-blue-100 text-blue-900' },
-  { label: 'To assign', statuses: ['confirmed'], dot: 'bg-violet-500', row: 'bg-violet-50 hover:bg-violet-100 border-l-violet-500', pill: 'bg-violet-100 text-violet-900' },
-  { label: 'Assigned', statuses: ['driver_assigned'], dot: 'bg-cyan-500', row: 'bg-cyan-50 hover:bg-cyan-100 border-l-cyan-500', pill: 'bg-cyan-100 text-cyan-900' },
-  { label: 'In progress', statuses: ['on_the_way', 'arrived', 'started'], dot: 'bg-orange-500', row: 'bg-orange-50 hover:bg-orange-100 border-l-orange-500', pill: 'bg-orange-100 text-orange-900' },
-  { label: 'Completed', statuses: ['completed'], dot: 'bg-emerald-500', row: 'bg-emerald-50 hover:bg-emerald-100 border-l-emerald-500', pill: 'bg-emerald-100 text-emerald-900' },
-  { label: 'Closed / ended', statuses: ['closed', 'rejected', 'cancelled_customer', 'cancelled_management', 'expired', 'no_show', 'quote_declined'], dot: 'bg-neutral-400', row: 'bg-neutral-100 hover:bg-neutral-200 border-l-neutral-400', pill: 'bg-neutral-200 text-neutral-800' },
+  { label: 'Requests', statuses: ['pending', 'under_review', 'clarification_needed', 'change_requested'], dot: 'bg-amber-500', row: 'bg-amber-100 hover:bg-amber-200 border-l-amber-500', pill: 'bg-amber-200 text-amber-900' },
+  { label: 'Quoted', statuses: ['quote_sent', 'quote_accepted'], dot: 'bg-blue-500', row: 'bg-blue-100 hover:bg-blue-200 border-l-blue-500', pill: 'bg-blue-200 text-blue-900' },
+  { label: 'To assign', statuses: ['confirmed'], dot: 'bg-violet-500', row: 'bg-violet-100 hover:bg-violet-200 border-l-violet-500', pill: 'bg-violet-200 text-violet-900' },
+  { label: 'Assigned', statuses: ['driver_assigned'], dot: 'bg-cyan-500', row: 'bg-cyan-100 hover:bg-cyan-200 border-l-cyan-500', pill: 'bg-cyan-200 text-cyan-900' },
+  { label: 'In progress', statuses: ['on_the_way', 'arrived', 'started'], dot: 'bg-orange-500', row: 'bg-orange-100 hover:bg-orange-200 border-l-orange-500', pill: 'bg-orange-200 text-orange-900' },
+  { label: 'Completed', statuses: ['completed'], dot: 'bg-emerald-500', row: 'bg-emerald-100 hover:bg-emerald-200 border-l-emerald-500', pill: 'bg-emerald-200 text-emerald-900' },
+  { label: 'Closed / ended', statuses: ['closed', 'rejected', 'cancelled_customer', 'cancelled_management', 'expired', 'no_show', 'quote_declined'], dot: 'bg-neutral-400', row: 'bg-neutral-200 hover:bg-neutral-300 border-l-neutral-400', pill: 'bg-neutral-300 text-neutral-800' },
 ];
 const TABS = [{ key: '', label: 'All' }, ...STAGES.map((st) => ({ key: st.statuses.join(','), label: st.label, dot: st.dot }))];
 const stageOf = (status) => STAGES.find((st) => st.statuses.includes(status)) || STAGES[STAGES.length - 1];
