@@ -8,16 +8,39 @@ import { Empty, ErrorState, PageHeader, PageLoader, PaymentBadge, SelectInput, T
 import { cn } from '@/lib/utils';
 
 const STAGES = [
-  { label: 'Requests',      hint: 'Waiting for quote',  icon: Inbox,         statuses: ['pending','under_review','clarification_needed','change_requested'], tile: 'bg-amber-100 text-amber-950',   row: 'bg-amber-50  hover:bg-amber-100',  border: 'border-l-amber-500',  pill: 'bg-amber-200 text-amber-900'   },
-  { label: 'In progress',   hint: 'On the road now',    icon: Navigation,    statuses: ['on_the_way','arrived','started'],                                    tile: 'bg-orange-500 text-white',      row: 'bg-orange-50 hover:bg-orange-100', border: 'border-l-orange-500', pill: 'bg-orange-200 text-orange-900'  },
-  { label: 'To assign',     hint: 'Need a chauffeur',   icon: UserPlus,      statuses: ['confirmed'],                                                         tile: 'bg-violet-100 text-violet-950', row: 'bg-violet-50 hover:bg-violet-100', border: 'border-l-violet-500', pill: 'bg-violet-200 text-violet-900'  },
-  { label: 'Quoted',        hint: 'With the customer',  icon: FileText,      statuses: ['quote_sent','quote_accepted'],                                       tile: 'bg-blue-100 text-blue-950',     row: 'bg-blue-50   hover:bg-blue-100',   border: 'border-l-blue-500',   pill: 'bg-blue-200 text-blue-900'     },
-  { label: 'Assigned',      hint: 'Chauffeur set',      icon: Car,           statuses: ['driver_assigned'],                                                   tile: 'bg-cyan-100 text-cyan-950',     row: 'bg-cyan-50   hover:bg-cyan-100',   border: 'border-l-cyan-500',   pill: 'bg-cyan-200 text-cyan-900'     },
-  { label: 'Completed',     hint: 'Journey finished',   icon: CheckCircle2,  statuses: ['completed'],                                                         tile: 'bg-emerald-100 text-emerald-950',row:'bg-emerald-50 hover:bg-emerald-100',border:'border-l-emerald-500',pill: 'bg-emerald-200 text-emerald-900'},
-  { label: 'Closed/ended',  hint: 'Closed or cancelled',icon: Archive,       statuses: ['closed','rejected','cancelled_customer','cancelled_management','expired','no_show','quote_declined'], tile: 'bg-neutral-200 text-neutral-900', row: 'bg-neutral-100 hover:bg-neutral-200', border: 'border-l-neutral-400', pill: 'bg-neutral-300 text-neutral-800' },
+  { label: 'Requests',      hint: 'Waiting for quote',  icon: Inbox,         statuses: ['pending','under_review','clarification_needed','change_requested'], tile: 'bg-amber-100 text-amber-950',    row: 'bg-amber-100  hover:bg-amber-200',  border: 'border-l-amber-500',  pill: 'bg-amber-300 text-amber-900'   },
+  { label: 'In progress',   hint: 'On the road now',    icon: Navigation,    statuses: ['on_the_way','arrived','started'],                                    tile: 'bg-orange-500 text-white',       row: 'bg-orange-100 hover:bg-orange-200', border: 'border-l-orange-500', pill: 'bg-orange-300 text-orange-900'  },
+  { label: 'To assign',     hint: 'Need a chauffeur',   icon: UserPlus,      statuses: ['confirmed'],                                                         tile: 'bg-violet-100 text-violet-950',  row: 'bg-violet-100 hover:bg-violet-200', border: 'border-l-violet-500', pill: 'bg-violet-300 text-violet-900'  },
+  { label: 'Quoted',        hint: 'With the customer',  icon: FileText,      statuses: ['quote_sent','quote_accepted'],                                       tile: 'bg-blue-100 text-blue-950',      row: 'bg-blue-100   hover:bg-blue-200',   border: 'border-l-blue-500',   pill: 'bg-blue-300 text-blue-900'     },
+  { label: 'Assigned',      hint: 'Chauffeur set',      icon: Car,           statuses: ['driver_assigned'],                                                   tile: 'bg-cyan-100 text-cyan-950',      row: 'bg-cyan-100   hover:bg-cyan-200',   border: 'border-l-cyan-500',   pill: 'bg-cyan-300 text-cyan-900'     },
+  { label: 'Completed',     hint: 'Journey finished',   icon: CheckCircle2,  statuses: ['completed'],                                                         tile: 'bg-emerald-100 text-emerald-950',row: 'bg-emerald-100 hover:bg-emerald-200',border:'border-l-emerald-500',pill: 'bg-emerald-300 text-emerald-900'},
+  { label: 'Closed/ended',  hint: 'Closed or cancelled',icon: Archive,       statuses: ['closed','rejected','cancelled_customer','cancelled_management','expired','no_show','quote_declined'], tile: 'bg-neutral-200 text-neutral-900', row: 'bg-neutral-200 hover:bg-neutral-300', border: 'border-l-neutral-400', pill: 'bg-neutral-400 text-neutral-800' },
 ];
+// Per-status row/pill overrides — finer-grained than stage colour
+const STATUS_COLORS = {
+  pending:              { row: 'bg-amber-100  hover:bg-amber-200',   border: 'border-l-amber-500',   pill: 'bg-amber-300  text-amber-900'   },
+  under_review:         { row: 'bg-amber-100  hover:bg-amber-200',   border: 'border-l-amber-500',   pill: 'bg-amber-300  text-amber-900'   },
+  clarification_needed: { row: 'bg-yellow-100 hover:bg-yellow-200',  border: 'border-l-yellow-500',  pill: 'bg-yellow-300 text-yellow-900'  },
+  change_requested:     { row: 'bg-yellow-100 hover:bg-yellow-200',  border: 'border-l-yellow-500',  pill: 'bg-yellow-300 text-yellow-900'  },
+  quote_sent:           { row: 'bg-blue-100   hover:bg-blue-200',    border: 'border-l-blue-400',    pill: 'bg-blue-200   text-blue-900'    },
+  quote_accepted:       { row: 'bg-sky-100    hover:bg-sky-200',     border: 'border-l-sky-500',     pill: 'bg-sky-300    text-sky-900'     },
+  confirmed:            { row: 'bg-violet-100 hover:bg-violet-200',  border: 'border-l-violet-500',  pill: 'bg-violet-300 text-violet-900'  },
+  driver_assigned:      { row: 'bg-cyan-100   hover:bg-cyan-200',    border: 'border-l-cyan-500',    pill: 'bg-cyan-300   text-cyan-900'    },
+  on_the_way:           { row: 'bg-orange-100 hover:bg-orange-200',  border: 'border-l-orange-500',  pill: 'bg-orange-300 text-orange-900'  },
+  arrived:              { row: 'bg-orange-200 hover:bg-orange-300',  border: 'border-l-orange-600',  pill: 'bg-orange-400 text-white'       },
+  started:              { row: 'bg-orange-100 hover:bg-orange-200',  border: 'border-l-orange-500',  pill: 'bg-orange-300 text-orange-900'  },
+  completed:            { row: 'bg-emerald-100 hover:bg-emerald-200',border: 'border-l-emerald-500', pill: 'bg-emerald-300 text-emerald-900'},
+  closed:               { row: 'bg-neutral-200 hover:bg-neutral-300',border: 'border-l-neutral-400', pill: 'bg-neutral-400 text-neutral-800'},
+  rejected:             { row: 'bg-red-100    hover:bg-red-200',     border: 'border-l-red-500',     pill: 'bg-red-200    text-red-900'     },
+  cancelled_customer:   { row: 'bg-red-100    hover:bg-red-200',     border: 'border-l-red-500',     pill: 'bg-red-200    text-red-900'     },
+  cancelled_management: { row: 'bg-red-100    hover:bg-red-200',     border: 'border-l-red-500',     pill: 'bg-red-200    text-red-900'     },
+  expired:              { row: 'bg-red-50     hover:bg-red-100',     border: 'border-l-red-400',     pill: 'bg-red-100    text-red-800'     },
+  no_show:              { row: 'bg-rose-100   hover:bg-rose-200',    border: 'border-l-rose-500',    pill: 'bg-rose-300   text-rose-900'    },
+  quote_declined:       { row: 'bg-red-100    hover:bg-red-200',     border: 'border-l-red-500',     pill: 'bg-red-200    text-red-900'     },
+};
 const keyOf = (st) => st.statuses.join(',');
 const stageOf = (status) => STAGES.find((st) => st.statuses.includes(status)) ?? STAGES[STAGES.length - 1];
+const rowStyle = (status) => STATUS_COLORS[status] ?? stageOf(status);
 
 function Tile({ label, hint, icon: I, count, tone, active, big, onClick }) {
   return (
@@ -119,9 +142,9 @@ export default function Bookings() {
             </thead>
             <tbody className="divide-y divide-border">
               {shown.map((b) => {
-                const st = stageOf(b.status);
+                const rs = rowStyle(b.status);
                 return (
-                  <tr key={b.id} className={cn('border-l-[3px] transition-colors', st.row, st.border)}>
+                  <tr key={b.id} className={cn('border-l-[3px] transition-colors', rs.row, rs.border)}>
                     <td className="py-3 pl-5 pr-3">
                       <Link to={`/admin/bookings/${b.id}`} className="font-heading font-bold text-ink hover:text-primary hover:underline">
                         {b.ref}
@@ -129,7 +152,7 @@ export default function Bookings() {
                       <div className="text-xs text-muted-foreground">{JOURNEY_TYPES[b.journey_type]}{b.is_return ? ' · return' : ''}</div>
                     </td>
                     <td className="px-3 py-3">
-                      <span className={cn('inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold', st.pill)}>
+                      <span className={cn('inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold', rs.pill)}>
                         {STATUS[b.status]?.admin || b.status}
                       </span>
                     </td>
