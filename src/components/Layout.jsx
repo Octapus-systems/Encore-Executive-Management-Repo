@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Activity, BarChart3, Bell, Briefcase, Building2, CalendarDays, Car, ClipboardList, FileText, LayoutDashboard, LogOut, Menu, MessageSquare,
+  Activity, BarChart3, Bell, MessagesSquare, Briefcase, Building2, CalendarDays, Car, ClipboardList, FileText, LayoutDashboard, LogOut, Menu, MessageSquare,
   Plus, Receipt, Settings, UserCog, Users, X,
 } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -18,6 +18,11 @@ export function RequireManagement() {
   if (loading) return <PageLoader />;
   if (!user || user.role !== 'admin') return <Navigate to="/login" replace state={{ from: loc.pathname }} />;
   return <Outlet />;
+}
+
+function useWaitingMessages() {
+  const { data } = useQuery({ queryKey: ['conversations'], queryFn: () => api.get('/admin/conversations'), refetchInterval: 15000 });
+  return (data || []).filter((c) => c.waiting > 0).length;
 }
 
 function useUnread() {
@@ -35,6 +40,7 @@ const NAV = [
     { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/admin/bookings', label: 'Bookings', icon: ClipboardList },
     { to: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
+    { to: '/admin/conversations', label: 'Messages', icon: MessagesSquare, badge: 'messages' },
   ] },
   { group: 'Resources', items: [
     { to: '/admin/fleet', label: 'Fleet', icon: Car },
@@ -72,6 +78,7 @@ export function ManagementLayout() {
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   const unread = useUnread();
+  const waitingMsgs = useWaitingMessages();
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex h-[72px] shrink-0 items-center justify-between px-6">
@@ -92,6 +99,7 @@ export function ManagementLayout() {
                   {isActive && <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
                   <n.icon className={cn('h-[17px] w-[17px] stroke-[1.75]', isActive ? 'text-primary' : 'text-white/45 group-hover:text-white/80')} />
                   {n.label}
+                  {n.badge === 'messages' && waitingMsgs > 0 && <span className="tabular ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold text-white">{waitingMsgs}</span>}
                 </>)}
               </NavLink>
             ))}
