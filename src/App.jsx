@@ -16,6 +16,8 @@ import { Fleet, Drivers, Operators } from '@/pages/admin/Resources';
 import Customers from '@/pages/admin/Customers';
 import { Payments, Invoices } from '@/pages/admin/Money';
 import { MessagesLog, ActivityLog, Settings } from '@/pages/admin/Control';
+import Team from '@/pages/admin/Team';
+import Reports from '@/pages/admin/Reports';
 
 export default function App() {
   return (
@@ -41,6 +43,8 @@ export default function App() {
                 <Route path="messages" element={<MessagesLog />} />
                 <Route path="inbox" element={<Alerts />} />
                 <Route path="activity" element={<ActivityLog />} />
+                <Route path="team" element={<Team />} />
+                <Route path="reports" element={<Reports />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
             </Route>

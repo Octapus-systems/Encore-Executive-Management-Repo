@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { Avatar, EntityCard, IconTile, Tabs, thCls, Empty, Field, Modal, PageHeader, PageLoader, Pill, PrimaryButton, SelectInput, TextArea, TextInput, useAction } from '@/components/common';
 import { Button } from '@/components/ui/button';
 
-const TABS = [{ id: 'customers', label: 'Customers', icon: Users }, { id: 'organisations', label: 'Corporate accounts', icon: Building2 }, { id: 'invitations', label: 'Invitations', icon: Mail }, { id: 'staff', label: 'Team', icon: KeyRound }];
+const TABS = [{ id: 'customers', label: 'Customers', icon: Users }, { id: 'organisations', label: 'Corporate accounts', icon: Building2 }, { id: 'invitations', label: 'Invitations', icon: Mail }];
 
 export default function Customers() {
   const [tab, setTab] = useState('customers');
@@ -19,7 +19,6 @@ export default function Customers() {
       {tab === 'customers' && <CustomerList />}
       {tab === 'organisations' && <Organisations />}
       {tab === 'invitations' && <Invitations />}
-      {tab === 'staff' && <Staff />}
     </div>
   );
 }
@@ -154,35 +153,6 @@ function Invitations() {
             );
           })}
         </div>
-      )}
-    </div>
-  );
-}
-
-function Staff() {
-  const { data, isLoading } = useQuery({ queryKey: ['staff'], queryFn: () => api.get('/admin/staff') });
-  const [f, setF] = useState(null);
-  const create = useAction((b) => api.post('/admin/staff', b), { success: 'Management user added.', invalidate: ['staff'], onSuccess: () => setF(null) });
-  const upd = useAction(({ id, ...b }) => api.patch(`/admin/staff/${id}`, b), { success: 'Updated.', invalidate: ['staff'] });
-  return (
-    <div>
-      <div className="mb-3 flex justify-end"><Button onClick={() => setF({ name: '', email: '', phone: '', password: '' })}><Plus />Add team member</Button></div>
-      {isLoading ? <PageLoader /> : (
-        <div className="divide-y card-surface">
-          {data.map((s) => (
-            <div key={s.id} className="flex items-center justify-between px-5 py-3 text-sm">
-              <div className="flex items-center gap-3"><Avatar name={s.name} dark /><div><div className="font-semibold">{s.name}</div><div className="text-xs text-muted-foreground">{s.email}</div></div></div>
-              <SelectInput className="h-9 w-36 text-sm" value={s.status} onChange={(e) => upd.mutate({ id: s.id, status: e.target.value })}><option value="active">Active</option><option value="suspended">Suspended</option></SelectInput>
-            </div>
-          ))}
-        </div>
-      )}
-      {f && (
-        <Modal open onOpenChange={() => setF(null)} title="Add team member" description="Management users have full Command Center access." footer={<PrimaryButton loading={create.isPending} onClick={() => create.mutate(f)}>Add</PrimaryButton>}>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {['name', 'email', 'phone', 'password'].map((k) => <Field key={k} label={k === 'password' ? 'Temporary password' : k[0].toUpperCase() + k.slice(1)}><TextInput value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></Field>)}
-          </div>
-        </Modal>
       )}
     </div>
   );

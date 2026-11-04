@@ -376,3 +376,20 @@ a.rounded-2xl, a.rounded-3xl, a[class*="rounded-[2rem]"] { transition: transform
 .tab-ink { animation: tab-ink .3s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes float-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 .float-y { animation: float-y 3.2s ease-in-out infinite; }
+/* ---------- dashboard motion ---------- */
+@keyframes dash-blob { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-24px,18px) scale(1.12); } }
+.dash-blob { animation: dash-blob 10s ease-in-out infinite; }
+@keyframes dash-ring { from { stroke-dashoffset: var(--ring-c); } }
+.dash-ring { animation: dash-ring 1.2s cubic-bezier(.2,.8,.2,1) both; transition: stroke-dashoffset .8s ease; }
+.dash-flow { background: repeating-linear-gradient(90deg, rgba(255,113,15,.55) 0 10px, transparent 10px 20px); background-size: 40px 2px; animation: dash-flow 1.6s linear infinite; mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent); }
+@keyframes dash-flow { to { background-position: 40px 0; } }
+
+/* ---------- printing (reports, invoices) ---------- */
+@media print {
+  @page { size: A4; margin: 12mm 10mm 14mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font: 9px Geist, Inter, sans-serif; color: #888; } @bottom-left { content: "Encore Executive · Confidential"; font: 9px Geist, Inter, sans-serif; color: #888; } }
+  html, body { background: #fff !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .break-inside-avoid { break-inside: avoid; }
+  thead { display: table-header-group; }
+}

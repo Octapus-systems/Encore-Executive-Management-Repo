@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Activity, Bell, Briefcase, Building2, CalendarDays, Car, ClipboardList, FileText, LayoutDashboard, LogOut, Menu, MessageSquare,
-  Plus, Receipt, Settings, Users, X,
+  Activity, BarChart3, Bell, Briefcase, Building2, CalendarDays, Car, ClipboardList, FileText, LayoutDashboard, LogOut, Menu, MessageSquare,
+  Plus, Receipt, Settings, UserCog, Users, X,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -45,10 +45,12 @@ const NAV = [
     { to: '/admin/customers', label: 'Customers', icon: Building2 },
     { to: '/admin/payments', label: 'Payments', icon: Receipt },
     { to: '/admin/invoices', label: 'Invoices', icon: FileText },
+    { to: '/admin/reports', label: 'Reports', icon: BarChart3 },
   ] },
   { group: 'Control', items: [
     { to: '/admin/messages', label: 'Notifications', icon: MessageSquare },
     { to: '/admin/activity', label: 'Activity', icon: Activity },
+    { to: '/admin/team', label: 'Team', icon: UserCog },
     { to: '/admin/settings', label: 'Settings', icon: Settings },
   ] },
 ];
@@ -101,7 +103,7 @@ export function ManagementLayout() {
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-orange-700 text-xs font-bold text-white">{initials(user.name)}</div>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[13px] font-semibold text-white">{user.name.replace(/\s*\(.*\)/, '')}</div>
-            <div className="truncate text-[11px] text-white/40">{user.email}</div>
+            <div className="flex items-center gap-1.5 truncate text-[11px] text-white/40"><span className={cn('rounded px-1 text-[10px] font-semibold uppercase tracking-wide', (user.staff_role || 'admin') === 'admin' ? 'bg-primary/20 text-orange-300' : 'bg-sky-400/15 text-sky-300')}>{user.staff_role || 'admin'}</span><span className="truncate">{user.email}</span></div>
           </div>
           <button onClick={signOut} title="Sign out" aria-label="Sign out" className="rounded-lg p-2 text-white/45 transition hover:bg-white/10 hover:text-white"><LogOut className="h-4 w-4" /></button>
         </div>
@@ -110,15 +112,15 @@ export function ManagementLayout() {
   );
   return (
     <div className="min-h-screen bg-surface">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 bg-ink lg:block">{sidebar}</aside>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 bg-ink lg:block print:!hidden">{sidebar}</aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-72 bg-ink shadow-2xl">{sidebar}</aside>
         </div>
       )}
-      <div className="lg:pl-60">
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-black/[0.06] bg-white/80 px-4 backdrop-blur-xl lg:px-8">
+      <div className="lg:pl-60 print:!pl-0">
+        <header className="sticky top-0 z-30 flex h-16 print:!hidden items-center justify-between gap-3 border-b border-black/[0.06] bg-white/80 px-4 backdrop-blur-xl lg:px-8">
           <div className="flex items-center gap-3">
             <button className="rounded-lg p-1.5 hover:bg-surface lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu"><Menu className="h-5 w-5" /></button>
             <div className="text-[13px] text-muted-foreground"><span className="hidden sm:inline">Command Center <span className="mx-1.5 text-black/20">/</span></span><span className="font-semibold text-foreground">{pageTitle(loc.pathname)}</span></div>
@@ -128,7 +130,7 @@ export function ManagementLayout() {
             <Link to="/admin/bookings/new" className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-white shadow-sm transition hover:bg-ink/85"><Plus className="h-4 w-4" />New booking</Link>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8"><div key={loc.pathname} className="page-enter"><Outlet /></div></main>
+        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8 print:!max-w-none print:!p-0"><div key={loc.pathname} className="page-enter"><Outlet /></div></main>
       </div>
     </div>
   );
