@@ -1,16 +1,23 @@
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, ArrowRight, CalendarClock, Inbox, MessageSquareWarning, Receipt, UserPlus } from 'lucide-react';
+import { UserCheck, AlertTriangle, ArrowRight, CalendarClock, Inbox, MessageSquareWarning, Receipt, UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { LEG_STATUS, gbp, shortDateTime, timeOnly } from '@/lib/format';
-import { Empty, ErrorState, PageHeader, PageLoader, Panel, StatusBadge } from '@/components/common';
+import { CountUp, Empty, ErrorState, IconTile, PageHeader, PageLoader, Panel, StatusBadge } from '@/components/common';
 import { cn } from '@/lib/utils';
 
-function Tile({ label, value, to, icon: Icon, alert }) {
+function Tile({ label, value, to, icon: Icon, tone = 'grey', i = 0 }) {
+  const hot = value > 0;
   return (
-    <Link to={to} className={cn('rounded-2xl border bg-white p-4 shadow-sm transition hover:border-primary/40 hover:shadow', alert && value > 0 && 'border-primary/40 bg-orange-50/60')}>
-      <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}<Icon className="h-4 w-4" /></div>
-      <div className={cn('mt-2 font-heading text-3xl font-bold', alert && value > 0 ? 'text-primary' : 'text-ink')}>{value}</div>
+    <Link to={to} style={{ animationDelay: `${i * 50}ms` }} className="card-surface lift animate-rise group flex flex-col gap-3 p-4">
+      <div className="flex items-center justify-between">
+        <IconTile icon={Icon} tone={hot ? tone : 'grey'} />
+        <ArrowRight className="h-4 w-4 -translate-x-1 text-neutral-300 opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100" />
+      </div>
+      <div>
+        <CountUp value={value} className={cn('font-heading text-[28px] font-semibold leading-none tracking-tight', hot ? 'text-ink' : 'text-neutral-400')} />
+        <div className="mt-1 text-[13px] font-medium text-muted-foreground">{label}</div>
+      </div>
     </Link>
   );
 }
@@ -23,18 +30,18 @@ export default function Dashboard() {
   const awaitingReview = (c.pending || 0) + (c.under_review || 0) + (c.change_requested || 0);
   return (
     <div className="space-y-6">
-      <PageHeader title="Command Center" subtitle={new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())} />
+      <PageHeader title={`Good ${new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}`} subtitle={new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(new Date())} />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
-        <Tile label="To review" value={awaitingReview} to="/admin/bookings?status=pending,under_review,change_requested" icon={Inbox} alert />
-        <Tile label="To confirm" value={c.quote_accepted || 0} to="/admin/bookings?status=quote_accepted" icon={CalendarClock} alert />
-        <Tile label="To assign" value={d.unassigned.length} to="/admin/bookings?status=confirmed" icon={AlertTriangle} alert />
-        <Tile label="Conflicts" value={d.conflicts.length} to="/admin/calendar" icon={AlertTriangle} alert />
-        <Tile label="Unpaid jobs" value={d.unpaid} to="/admin/payments" icon={Receipt} alert />
-        <Tile label="Access requests" value={d.pendingCustomers} to="/admin/customers" icon={UserPlus} alert />
+        <Tile label="To review" value={awaitingReview} to="/admin/bookings?status=pending,under_review,change_requested" icon={Inbox} tone="amber" i={0} />
+        <Tile label="To confirm" value={c.quote_accepted || 0} to="/admin/bookings?status=quote_accepted" icon={CalendarClock} tone="blue" i={1} />
+        <Tile label="To assign" value={d.unassigned.length} to="/admin/bookings?status=confirmed" icon={UserCheck} tone="violet" i={2} />
+        <Tile label="Conflicts" value={d.conflicts.length} to="/admin/calendar" icon={AlertTriangle} tone="red" i={3} />
+        <Tile label="Unpaid jobs" value={d.unpaid} to="/admin/payments" icon={Receipt} tone="brand" i={4} />
+        <Tile label="Access requests" value={d.pendingCustomers} to="/admin/customers" icon={UserPlus} tone="green" i={5} />
       </div>
 
       {d.failedMessages > 0 && (
-        <Link to="/admin/messages?failed=1" className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <Link to="/admin/messages?failed=1" className="flex items-center gap-3 rounded-[14px] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <MessageSquareWarning className="h-5 w-5" />
           <span><b>{d.failedMessages}</b> customer message deliveries in the last 48 hours were not delivered by WhatsApp/email. In-app copies were saved — follow up if needed.</span>
           <ArrowRight className="ml-auto h-4 w-4" />
@@ -47,7 +54,7 @@ export default function Dashboard() {
             <div className="divide-y">
               {d.today.map((l) => (
                 <Link key={l.id} to={`/admin/bookings/${l.booking_id}`} className="flex items-center gap-4 px-5 py-3 hover:bg-surface">
-                  <div className="w-14 font-heading text-lg font-bold">{timeOnly(l.pickup_at)}</div>
+                  <div className="tabular w-14 font-heading text-[17px] font-semibold">{timeOnly(l.pickup_at)}</div>
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-semibold">{l.lead_passenger} <span className="font-normal text-muted-foreground">· {l.ref} · {l.label}</span></div>
                     <div className="truncate text-xs text-muted-foreground">{l.pickup} → {l.destination}</div>
@@ -101,7 +108,7 @@ export default function Dashboard() {
           )}
         </Panel>
       </div>
-      {d.overdueInvoices.n > 0 && <Link to="/admin/invoices" className="block rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"><b>{d.overdueInvoices.n}</b> overdue invoice(s) totalling <b>{gbp(d.overdueInvoices.total)}</b>.</Link>}
+      {d.overdueInvoices.n > 0 && <Link to="/admin/invoices" className="block rounded-[14px] border border-red-200 bg-red-50 p-4 text-sm text-red-800"><b>{d.overdueInvoices.n}</b> overdue invoice(s) totalling <b>{gbp(d.overdueInvoices.total)}</b>.</Link>}
     </div>
   );
 }

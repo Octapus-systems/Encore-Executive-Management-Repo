@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { Plus } from 'lucide-react';
 import { Banner, Field, PageHeader, PageLoader, SelectInput, useAction } from '@/components/common';
 import { RequestForm, emptyRequest } from '@/components/booking';
 
@@ -20,11 +21,11 @@ export default function NewBooking() {
   const c = customers.data.find((x) => String(x.id) === String(customerId));
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="New booking for a customer" subtitle="For requests taken by phone or message. It enters the normal review → quote → confirm flow." />
+      <PageHeader icon={Plus} tone="brand" title="New booking" subtitle="For a request taken by phone or message." />
       <RequestForm key={formKey} initial={{ ...emptyRequest(null), lead_passenger: c?.name || '', contact_phone: c?.phone || '' }}
         onSubmit={(b) => create.mutate(b)} submitting={create.isPending} fields={create.fields} submitLabel="Create request"
         beforeSections={(
-          <div className="rounded-2xl border bg-white p-5 shadow-sm">
+          <div className="card-surface p-5 ">
             <Field label="Customer" error={create.fields.customer_id} required>
               <SelectInput value={customerId} onChange={(e) => { setCustomerId(e.target.value); setFormKey((k) => k + 1); }}>
                 <option value="">Choose an approved customer…</option>

@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Activity, Bell, Building, CalendarCog, CreditCard, Mail, MessageSquare, Search, Settings as SettingsIcon, ShieldCheck, Smartphone, Timer, UserCheck } from 'lucide-react';
 import { api } from '@/lib/api';
 import { ACTIVITY_LABEL, shortDateTime } from '@/lib/format';
-import { Banner, Field, PageHeader, PageLoader, Panel, PrimaryButton, SelectInput, TextArea, TextInput, useAction } from '@/components/common';
+import { Avatar, Empty, IconTile, Segmented, Banner, Field, PageHeader, PageLoader, Panel, PrimaryButton, SelectInput, TextArea, TextInput, useAction } from '@/components/common';
 import { ActivityDetail, DeliveryChips } from '@/pages/admin/BookingDetail';
 import { Button } from '@/components/ui/button';
 
@@ -13,13 +14,13 @@ export function MessagesLog() {
   const { data, isLoading } = useQuery({ queryKey: ['notification-log', failed], queryFn: () => api.get(`/admin/notifications${failed ? '?failed=1' : ''}`) });
   return (
     <div>
-      <PageHeader title="Notifications" subtitle="Every message the platform generated and what happened on each channel. A saved message is not proof of delivery."
-        actions={<Button variant={failed ? 'default' : 'outline'} className="rounded-full" onClick={() => setParams(failed ? {} : { failed: 1 })}>{failed ? 'Showing undelivered' : 'Show undelivered only'}</Button>} />
-      <Banner tone="blue" className="mb-4">WhatsApp sends from Encore's business account once WhatsApp Business API credentials are configured on the server. Until then, external deliveries show as “not configured” and customers still receive the in-app update.</Banner>
-      {isLoading ? <PageLoader /> : (
-        <div className="divide-y rounded-2xl border bg-white shadow-sm">
-          {data.map((n) => (
-            <div key={n.id} className="grid gap-2 px-5 py-3 text-sm md:grid-cols-[1fr_auto]">
+      <PageHeader icon={MessageSquare} title="Notifications" subtitle="Every message sent to customers and drivers, and whether it arrived."
+        actions={<Segmented value={failed ? 'failed' : 'all'} onChange={(v) => setParams(v === 'failed' ? { failed: 1 } : {})} options={[['all', 'All'], ['failed', 'Not delivered']]} />} />
+      {isLoading ? <PageLoader /> : !data.length ? <Empty icon={Bell} title={failed ? 'Everything was delivered' : 'No messages yet'} /> : (
+        <div className="divide-y card-surface">
+          {data.map((n, i) => (
+            <div key={n.id} style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }} className="row-in grid gap-2 px-5 py-3 text-sm md:grid-cols-[auto_1fr_auto] md:items-center">
+              <IconTile icon={n.recipient_role === 'driver' ? UserCheck : Bell} tone={n.recipient_role === 'driver' ? 'dark' : 'grey'} className="hidden md:grid" />
               <div className="min-w-0">
                 <div className="font-semibold">{n.title} {n.ref && <Link className="ml-1 text-xs text-primary" to={`/admin/bookings/${n.booking_id}`}>{n.ref}</Link>}</div>
                 <div className="truncate text-muted-foreground">{n.body}</div>
@@ -40,20 +41,20 @@ export function ActivityLog() {
   const rows = (data || []).filter((a) => !q || JSON.stringify(a).toLowerCase().includes(q.toLowerCase()));
   return (
     <div>
-      <PageHeader title="Activity history" subtitle="Who changed bookings, quotations, assignments, payments, cancellations and statuses — and when." />
-      <TextInput className="mb-4 max-w-sm" placeholder="Filter (ref, person, action)…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <PageHeader icon={Activity} title="Activity" subtitle="Who changed what, and when."
+        actions={<div className="relative w-64"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" /><TextInput className="h-9 pl-9" placeholder="Search ref, person, action" value={q} onChange={(e) => setQ(e.target.value)} /></div>} />
       {isLoading ? <PageLoader /> : (
-        <div className="divide-y rounded-2xl border bg-white shadow-sm">
-          {rows.map((a) => (
-            <div key={a.id} className="grid gap-1 px-5 py-3 text-sm md:grid-cols-[180px_1fr_200px]">
-              <div className="text-xs text-muted-foreground">{shortDateTime(a.created_at)}</div>
+        <div className="divide-y card-surface">
+          {rows.map((a, i) => (
+            <div key={a.id} style={{ animationDelay: `${Math.min(i, 12) * 25}ms` }} className="row-in grid gap-2 px-5 py-3 text-sm md:grid-cols-[auto_1fr_auto] md:items-center">
+              <Avatar name={a.actor_name || 'System'} dark={!!a.actor_name} className="hidden md:grid" />
               <div className="min-w-0">
                 <span className="font-semibold capitalize">{ACTIVITY_LABEL(a.action)}</span>
                 {a.ref && <Link className="ml-2 text-xs font-semibold text-primary" to={`/admin/bookings/${a.booking_id}`}>{a.ref}</Link>}
                 {!a.ref && <span className="ml-2 text-xs text-muted-foreground">{a.entity} #{a.entity_id}</span>}
                 {a.detail && <ActivityDetail detail={a.detail} />}
               </div>
-              <div className="text-xs md:text-right">{a.actor_name ? `${a.actor_name} · ${a.actor_role}` : 'System'}</div>
+              <div className="text-xs text-muted-foreground md:text-right"><div className="font-medium text-ink">{a.actor_name || 'System'}</div>{shortDateTime(a.created_at)}</div>
             </div>
           ))}
         </div>
@@ -65,7 +66,7 @@ export function ActivityLog() {
 const NUMERIC = [
   ['default_job_minutes', 'Default journey duration (minutes)', 'Used for conflict detection when a leg has no planned duration.'],
   ['turnaround_minutes', 'Turnaround buffer (minutes)', 'Added after each journey before the driver/vehicle is free.'],
-  ['reminder_minutes_before', 'Pickup reminder (minutes before)', 'BRD: one hour.'],
+  ['reminder_minutes_before', 'Pickup reminder (minutes before)', 'Usually 60.'],
   ['quote_validity_hours', 'Quotation validity (hours)', ''],
   ['invoice_due_days', 'Invoice due (days)', ''],
   ['max_drivers', 'Active driver limit', 'Per your plan.'],
@@ -77,6 +78,10 @@ const BOOKING_FIELDS = [
   ['child_seats', 'Child seats'], ['accessibility_needs', 'Accessibility needs'], ['preferred_category', 'Preferred vehicle'],
   ['flight_number', 'Flight number (airport)'], ['special_instructions', 'Special instructions'], ['sensitive_notes', 'Private notes for chauffeur'],
 ];
+function SectionTitle({ icon: Icon, tone, children }) {
+  return <span className="flex items-center gap-2.5"><IconTile icon={Icon} tone={tone} className="!h-8 !w-8 !rounded-lg [&_svg]:!h-4 [&_svg]:!w-4" />{children}</span>;
+}
+
 const OnOff = (props) => <SelectInput {...props}><option value="on">On</option><option value="off">Off</option></SelectInput>;
 
 export function Settings() {
@@ -90,8 +95,12 @@ export function Settings() {
   const toggleField = (k) => setF({ ...f, booking_fields: { ...f.booking_fields, [k]: f.booking_fields[k] === false } });
   return (
     <div className="max-w-4xl space-y-5">
-      <PageHeader title="Settings" subtitle="Operational rules. Items still open in the BRD are configurable here rather than hard-coded." actions={<PrimaryButton loading={save.isPending} onClick={submit}>Save settings</PrimaryButton>} />
-      <Panel title="Company & dispatch">
+      <PageHeader icon={SettingsIcon} title="Settings" subtitle="How Encore runs day to day." />
+      <div className="sticky top-16 z-20 -mx-1 flex items-center justify-between gap-3 rounded-[14px] border bg-white/85 px-4 py-2.5 shadow-[0_8px_24px_-12px_rgba(16,16,20,.18)] backdrop-blur-xl">
+        <span className="text-[13px] text-muted-foreground">Changes apply after you save.</span>
+        <PrimaryButton loading={save.isPending} onClick={submit}>Save changes</PrimaryButton>
+      </div>
+      <Panel title={<SectionTitle icon={Building} tone="dark">Company & dispatch</SectionTitle>}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Company name"><TextInput {...bind('company_name')} /></Field>
           <Field label="Operating base"><TextInput {...bind('base_location')} /></Field>
@@ -101,7 +110,7 @@ export function Settings() {
           <Field label="Invoice number prefix"><TextInput {...bind('invoice_prefix')} /></Field>
         </div>
       </Panel>
-      <Panel title="Customer admission (BRD open question 3)">
+      <Panel title={<SectionTitle icon={ShieldCheck} tone="green">Who can join</SectionTitle>}>
         <Field label="How customers join">
           <SelectInput {...bind('admission_mode')}>
             <option value="invitation">Invitation only</option>
@@ -110,7 +119,7 @@ export function Settings() {
           </SelectInput>
         </Field>
       </Panel>
-      <Panel title="Booking rules">
+      <Panel title={<SectionTitle icon={CalendarCog} tone="blue">Booking rules</SectionTitle>}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Minimum notice (hours before pickup)" hint="Customers can't request journeys sooner than this. Staff bookings may override. 0 = off."><TextInput type="number" min="0" step="0.5" {...bind('min_notice_hours')} /></Field>
           <Field label="Minimum hourly hire (hours)" hint="Applies to 'as directed' hourly bookings. Staff may override."><TextInput type="number" min="0" step="0.5" {...bind('hourly_min_hours')} /></Field>
@@ -121,14 +130,14 @@ export function Settings() {
           <div className="mb-2 text-sm font-semibold">Fields shown on the customer booking form</div>
           <div className="grid gap-2 sm:grid-cols-3">
             {BOOKING_FIELDS.map(([k, l]) => (
-              <label key={k} className="flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm">
+              <label key={k} className="flex cursor-pointer items-center gap-2 rounded-[10px] border px-3 py-2 text-[13px] transition hover:border-neutral-300 has-[:checked]:border-orange-300 has-[:checked]:bg-orange-50/50">
                 <input type="checkbox" className="h-4 w-4 accent-[#FF5A1F]" checked={f.booking_fields[k] !== false} onChange={() => toggleField(k)} />{l}
               </label>
             ))}
           </div>
         </div>
       </Panel>
-      <Panel title="Payment rules">
+      <Panel title={<SectionTitle icon={CreditCard} tone="amber">Payment rules</SectionTitle>}>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="New bookings default to" hint="Corporate account bookings always use monthly invoicing.">
             <SelectInput {...bind('default_payment_arrangement')}><option value="pay_before">Pay before the journey (preferred)</option><option value="pay_after">Pay after the journey</option></SelectInput>
@@ -138,27 +147,27 @@ export function Settings() {
           </Field>
         </div>
       </Panel>
-      <Panel title="Customer sign-in">
+      <Panel title={<SectionTitle icon={Smartphone} tone="violet">Customer sign-in</SectionTitle>}>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field label="Book without signing in first" hint="Customers verify their mobile at the end."><OnOff {...bind('guest_booking')} /></Field>
           <Field label="Mobile number + code sign-in"><OnOff {...bind('otp_login')} /></Field>
           <Field label="Send codes by" hint="Demo mode until an SMS/WhatsApp provider is connected."><SelectInput {...bind('otp_channel')}><option value="sms">SMS</option><option value="whatsapp">WhatsApp</option></SelectInput></Field>
         </div>
       </Panel>
-      <Panel title="Timings & limits">
+      <Panel title={<SectionTitle icon={Timer} tone="grey">Timings & limits</SectionTitle>}>
         <div className="grid gap-4 sm:grid-cols-2">
           {NUMERIC.map(([k, l, h]) => <Field key={k} label={l} hint={h}><TextInput type="number" min="0" {...bind(k)} /></Field>)}
         </div>
       </Panel>
-      <Panel title="Policies & vehicles">
+      <Panel title={<SectionTitle icon={ShieldCheck} tone="grey">Policies & vehicles</SectionTitle>}>
         <div className="grid gap-4">
-          <Field label="Cancellation policy shown to customers" hint="Fees, refunds and no-show rules are not yet defined (BRD §19) — describe what is agreed."><TextArea rows={3} {...bind('cancellation_policy')} /></Field>
+          <Field label="Cancellation policy shown to customers" hint="Fees, refunds and no-show rules, in plain words."><TextArea rows={3} {...bind('cancellation_policy')} /></Field>
           <Field label="Vehicle categories (one per line)"><TextArea rows={4} {...bind('vehicle_categories')} /></Field>
         </div>
       </Panel>
-      <Panel title="Notification channels">
+      <Panel title={<SectionTitle icon={Mail} tone="brand">Notification channels</SectionTitle>}>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="WhatsApp" hint="Requires WHATSAPP_TOKEN and WHATSAPP_PHONE_ID on the server"><SelectInput {...bind('channel_whatsapp')}><option value="on">On</option><option value="off">Off</option></SelectInput></Field>
+          <Field label="WhatsApp" hint="Needs WhatsApp Business set up on the server."><SelectInput {...bind('channel_whatsapp')}><option value="on">On</option><option value="off">Off</option></SelectInput></Field>
           <Field label="Email" hint="Provider to be agreed"><SelectInput {...bind('channel_email')}><option value="on">On</option><option value="off">Off</option></SelectInput></Field>
         </div>
       </Panel>

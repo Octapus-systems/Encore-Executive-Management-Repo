@@ -27,7 +27,7 @@ function useUnread() {
 
 function Dot({ n }) {
   if (!n) return null;
-  return <span className="absolute -right-1.5 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">{n > 9 ? '9+' : n}</span>;
+  return <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-white">{n > 9 ? '9+' : n}</span>;
 }
 
 const NAV = [
@@ -41,19 +41,28 @@ const NAV = [
     { to: '/admin/drivers', label: 'Drivers', icon: Users },
     { to: '/admin/operators', label: 'External cover', icon: Briefcase },
   ] },
-  { group: 'Customers & money', items: [
+  { group: 'Finance', items: [
     { to: '/admin/customers', label: 'Customers', icon: Building2 },
     { to: '/admin/payments', label: 'Payments', icon: Receipt },
     { to: '/admin/invoices', label: 'Invoices', icon: FileText },
   ] },
   { group: 'Control', items: [
     { to: '/admin/messages', label: 'Notifications', icon: MessageSquare },
-    { to: '/admin/activity', label: 'Activity history', icon: Activity },
+    { to: '/admin/activity', label: 'Activity', icon: Activity },
     { to: '/admin/settings', label: 'Settings', icon: Settings },
   ] },
 ];
 
+const TITLES = Object.fromEntries(NAV.flatMap((g) => g.items.map((i) => [i.to, i.label])));
+function pageTitle(path) {
+  if (path.startsWith('/admin/bookings/new')) return 'New booking';
+  if (path.startsWith('/admin/bookings/')) return 'Booking details';
+  const hit = Object.keys(TITLES).filter((k) => path === k || path.startsWith(k + '/')).sort((a, b) => b.length - a.length)[0];
+  return TITLES[hit] || 'Command Center';
+}
+
 const adminLink = (n) => `/admin/bookings/${n.booking_id}`;
+const initials = (name = '') => name.replace(/\(.*\)/, '').trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
 export function ManagementLayout() {
   useLiveUpdates(adminLink);
@@ -63,50 +72,63 @@ export function ManagementLayout() {
   const unread = useUnread();
   const sidebar = (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center justify-between px-5">
+      <div className="flex h-[72px] shrink-0 items-center justify-between px-6">
         <Logo dark />
-        <button className="text-white/60 lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu"><X className="h-5 w-5" /></button>
+        <button className="rounded-lg p-1 text-white/60 hover:bg-white/10 lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu"><X className="h-5 w-5" /></button>
       </div>
-      <div className="px-5 pb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Command Center</div>
-      <nav className="flex-1 overflow-y-auto px-3 pb-4">
+      <nav className="flex-1 overflow-y-auto px-3 pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {NAV.map((g) => (
-          <div key={g.group} className="mb-4">
-            <div className="px-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wider text-white/35">{g.group}</div>
+          <div key={g.group} className="mt-3 first:mt-1">
+            <div className="px-3 pb-1 text-[10px] font-medium uppercase tracking-[0.16em] text-white/30">{g.group}</div>
             {g.items.map((n) => (
               <NavLink key={n.to} to={n.to} end={n.end} onClick={() => setOpen(false)}
-                className={({ isActive }) => cn('mb-0.5 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-white/65 transition hover:bg-white/5 hover:text-white', isActive && 'bg-primary text-white hover:bg-primary')}>
-                <n.icon className="h-4 w-4" />{n.label}
+                className={({ isActive }) => cn(
+                  'group relative flex h-9 items-center gap-3 rounded-lg px-3 text-[13.5px] font-medium text-white/55 transition-colors hover:bg-white/[0.04] hover:text-white',
+                  isActive && 'bg-white/[0.07] text-white',
+                )}>
+                {({ isActive }) => (<>
+                  {isActive && <span className="absolute left-0 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-full bg-primary" />}
+                  <n.icon className={cn('h-[17px] w-[17px] stroke-[1.75]', isActive ? 'text-primary' : 'text-white/45 group-hover:text-white/80')} />
+                  {n.label}
+                </>)}
               </NavLink>
             ))}
           </div>
         ))}
       </nav>
-      <div className="border-t border-white/10 p-4">
-        <div className="truncate text-sm font-semibold text-white">{user.name}</div>
-        <div className="truncate text-xs text-white/50">{user.email}</div>
-        <button onClick={signOut} className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-white/60 hover:text-white"><LogOut className="h-3.5 w-3.5" />Sign out</button>
+      <div className="shrink-0 p-3">
+        <div className="flex items-center gap-3 rounded-xl bg-white/[0.04] p-2.5 ring-1 ring-white/[0.06]">
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-primary to-orange-700 text-xs font-bold text-white">{initials(user.name)}</div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[13px] font-semibold text-white">{user.name.replace(/\s*\(.*\)/, '')}</div>
+            <div className="truncate text-[11px] text-white/40">{user.email}</div>
+          </div>
+          <button onClick={signOut} title="Sign out" aria-label="Sign out" className="rounded-lg p-2 text-white/45 transition hover:bg-white/10 hover:text-white"><LogOut className="h-4 w-4" /></button>
+        </div>
       </div>
     </div>
   );
   return (
     <div className="min-h-screen bg-surface">
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 bg-ink lg:block">{sidebar}</aside>
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-60 bg-ink lg:block">{sidebar}</aside>
       {open && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
-          <aside className="absolute inset-y-0 left-0 w-72 bg-ink">{sidebar}</aside>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-72 bg-ink shadow-2xl">{sidebar}</aside>
         </div>
       )}
-      <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b bg-white/90 px-4 backdrop-blur lg:px-8">
-          <button className="lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu"><Menu className="h-5 w-5" /></button>
-          <div className="hidden text-sm text-muted-foreground lg:block">{loc.pathname.startsWith('/admin/bookings/') ? 'Booking' : ''}</div>
-          <div className="flex items-center gap-2">
-            <Link to="/admin/bookings/new" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-white hover:bg-primary/90"><Plus className="h-4 w-4" />New booking</Link>
-            <Link to="/admin/inbox" className="relative rounded-full p-2 hover:bg-surface" title="Alerts"><Bell className="h-5 w-5" /><Dot n={unread} /></Link>
+      <div className="lg:pl-60">
+        <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-3 border-b border-black/[0.06] bg-white/80 px-4 backdrop-blur-xl lg:px-8">
+          <div className="flex items-center gap-3">
+            <button className="rounded-lg p-1.5 hover:bg-surface lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu"><Menu className="h-5 w-5" /></button>
+            <div className="text-[13px] text-muted-foreground"><span className="hidden sm:inline">Command Center <span className="mx-1.5 text-black/20">/</span></span><span className="font-semibold text-foreground">{pageTitle(loc.pathname)}</span></div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <Link to="/admin/inbox" className="relative grid h-9 w-9 place-items-center rounded-full text-foreground/70 transition hover:bg-surface hover:text-foreground" title="Alerts"><Bell className="h-[18px] w-[18px]" /><Dot n={unread} /></Link>
+            <Link to="/admin/bookings/new" className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-ink px-4 text-[13px] font-semibold text-white shadow-sm transition hover:bg-ink/85"><Plus className="h-4 w-4" />New booking</Link>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8"><div key={loc.pathname} className="page-enter"><Outlet /></div></main>
+        <main className="mx-auto max-w-7xl px-4 py-6 lg:px-8 lg:py-8"><div key={loc.pathname} className="page-enter"><Outlet /></div></main>
       </div>
     </div>
   );

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { FileText, Plus, Receipt } from 'lucide-react';
+import { AlertTriangle, ChevronRight, CircleDollarSign, FileText, Link2, Plus, Receipt, Send } from 'lucide-react';
 import { api } from '@/lib/api';
 import { PAYMENT_ARRANGEMENT, PAYMENT_STATUS, dateOnly, gbp, shortDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { Empty, Field, Modal, PageHeader, PageLoader, PaymentBadge, PrimaryButton, SelectInput, StatusBadge, TextInput, useAction } from '@/components/common';
+import { ROW_TINT, CountUp, IconTile, Segmented, thCls, Empty, Field, Modal, PageHeader, PageLoader, PaymentBadge, PrimaryButton, SelectInput, StatusBadge, TextInput, useAction } from '@/components/common';
 import { InvoiceStatus } from '@/pages/shared';
 import { Button } from '@/components/ui/button';
 
@@ -18,31 +18,37 @@ export function Payments() {
   const sum = (s) => data.filter((r) => r.payment_status === s).reduce((t, r) => t + (r.total || 0) - (r.received || 0), 0);
   return (
     <div>
-      <PageHeader title="Payments" subtitle="Payment status is tracked separately from the journey. A failed payment is never shown as paid." />
+      <PageHeader icon={Receipt} title="Payments" subtitle="Who still owes, and what has been paid."
+        actions={<Segmented value={['outstanding', 'all', 'paid'].includes(filter) ? filter : ''} onChange={setFilter} options={[['outstanding', 'Outstanding'], ['paid', 'Paid'], ['all', 'All']]} />} />
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        {['unpaid', 'link_sent', 'invoiced', 'overdue'].map((s) => (
-          <button key={s} onClick={() => setFilter(s)} className={cn('rounded-2xl border bg-white p-4 text-left shadow-sm', filter === s && 'ring-2 ring-primary')}>
-            <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{PAYMENT_STATUS[s].label}</div>
-            <div className="mt-1 font-heading text-2xl font-bold">{data.filter((r) => r.payment_status === s).length}</div>
-            <div className="text-xs text-muted-foreground">{gbp(sum(s))} outstanding</div>
-          </button>
-        ))}
+        {[['unpaid', CircleDollarSign, 'amber'], ['link_sent', Link2, 'blue'], ['invoiced', Send, 'violet'], ['overdue', AlertTriangle, 'red']].map(([s, Icon, tone], i) => {
+          const n = data.filter((r) => r.payment_status === s).length;
+          return (
+            <button key={s} onClick={() => setFilter(s)} style={{ animationDelay: `${i * 50}ms` }}
+              className={cn('card-surface lift animate-rise group flex items-center gap-3 p-4 text-left', filter === s && 'border-ink/80 ring-1 ring-ink/80')}>
+              <IconTile icon={Icon} tone={n ? tone : 'grey'} />
+              <div className="min-w-0">
+                <div className="text-[13px] font-medium text-muted-foreground">{PAYMENT_STATUS[s].label}</div>
+                <div className="flex items-baseline gap-1.5"><CountUp value={n} className="font-heading text-[24px] font-semibold leading-tight text-ink" /><span className="tabular truncate text-[12px] text-muted-foreground">{gbp(sum(s))}</span></div>
+              </div>
+            </button>
+          );
+        })}
       </div>
-      <div className="mb-3 flex gap-2">{[['outstanding', 'Outstanding'], ['all', 'All'], ['paid', 'Paid']].map(([k, l]) => <Button key={k} size="sm" variant={filter === k ? 'default' : 'outline'} className="rounded-full" onClick={() => setFilter(k)}>{l}</Button>)}</div>
       {!rows.length ? <Empty icon={Receipt} title="Nothing here" /> : (
-        <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+        <div className="overflow-hidden card-surface">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
-              <thead className="bg-surface text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-3">Booking</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Arrangement</th><th className="px-4 py-3">Journey</th><th className="px-4 py-3 text-right">Price</th><th className="px-4 py-3 text-right">Received</th><th className="px-4 py-3">Payment</th></tr></thead>
+            <table className="w-full min-w-[820px] text-[13px]">
+              <thead className={thCls}><tr><th className="px-5 py-2.5 font-medium">Booking</th><th className="px-4 py-2.5 font-medium">Customer</th><th className="px-4 py-2.5 font-medium">Terms</th><th className="px-4 py-2.5 font-medium">Journey</th><th className="px-4 py-2.5 text-right font-medium">Price</th><th className="px-4 py-2.5 text-right font-medium">Received</th><th className="px-4 py-2.5 font-medium">Payment</th></tr></thead>
               <tbody className="divide-y">
-                {rows.map((r) => (
-                  <tr key={r.id} className="cursor-pointer hover:bg-surface/60" onClick={() => nav(`/admin/bookings/${r.id}`)}>
-                    <td className="px-4 py-3 font-semibold">{r.ref}<div className="text-xs font-normal text-muted-foreground">{shortDateTime(r.first_pickup)}</div></td>
+                {rows.map((r, i) => (
+                  <tr key={r.id} style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }} className={cn('row-in cursor-pointer transition-colors', (ROW_TINT[PAYMENT_STATUS[r.payment_status]?.tone] || ROW_TINT.grey).row)} onClick={() => nav(`/admin/bookings/${r.id}`)}>
+                    <td className={cn('tabular px-5 py-3 font-semibold', (ROW_TINT[PAYMENT_STATUS[r.payment_status]?.tone] || ROW_TINT.grey).edge)}>{r.ref}<div className="text-xs font-normal text-muted-foreground">{shortDateTime(r.first_pickup)}</div></td>
                     <td className="px-4 py-3">{r.customer_name}<div className="text-xs text-muted-foreground">{r.organisation_name}</div></td>
                     <td className="px-4 py-3 text-xs">{PAYMENT_ARRANGEMENT[r.payment_arrangement]}</td>
                     <td className="px-4 py-3"><StatusBadge status={r.status} admin /></td>
-                    <td className="px-4 py-3 text-right font-semibold">{r.total != null ? gbp(r.total) : '—'}</td>
-                    <td className="px-4 py-3 text-right">{gbp(r.received)}</td>
+                    <td className="tabular px-4 py-3 text-right font-semibold">{r.total != null ? gbp(r.total) : '—'}</td>
+                    <td className="tabular px-4 py-3 text-right text-muted-foreground">{gbp(r.received)}</td>
                     <td className="px-4 py-3"><PaymentBadge status={r.payment_status} /></td>
                   </tr>
                 ))}
@@ -61,19 +67,21 @@ export function Invoices() {
   const upd = useAction(({ id, ...b }) => api.patch(`/admin/invoices/${id}`, b), { success: 'Invoice updated.', invalidate: ['invoices', 'payments'] });
   return (
     <div>
-      <PageHeader title="Corporate invoices" subtitle="Consolidate completed corporate journeys into one invoice under the account's agreed terms."
-        actions={<Button className="rounded-full" onClick={() => setOpen(true)}><Plus />New consolidated invoice</Button>} />
+      <PageHeader icon={FileText} title="Invoices" subtitle="One monthly invoice per corporate account."
+        actions={<Button onClick={() => setOpen(true)}><Plus />New invoice</Button>} />
       {isLoading ? <PageLoader /> : !data.length ? <Empty icon={FileText} title="No invoices yet" /> : (
-        <div className="divide-y rounded-2xl border bg-white shadow-sm">
-          {data.map((i) => (
-            <div key={i.id} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
-              <Link to={`/admin/invoices/${i.id}`} className="min-w-0">
-                <div className="font-semibold">{i.number} · {i.organisation_name}</div>
-                <div className="text-xs text-muted-foreground">Period {dateOnly(i.period_start)} – {dateOnly(new Date(new Date(i.period_end).getTime() - 1))} · due {dateOnly(i.due_date)}</div>
+        <div className="divide-y card-surface">
+          {data.map((i, k) => (
+            <div key={i.id} style={{ animationDelay: `${Math.min(k, 12) * 30}ms` }} className="row-in group flex flex-wrap items-center justify-between gap-3 px-5 py-3 hover:bg-neutral-50/60">
+              <Link to={`/admin/invoices/${i.id}`} className="flex min-w-0 items-center gap-3">
+                <IconTile icon={FileText} tone={i.status === 'paid' ? 'green' : i.status === 'overdue' ? 'red' : 'grey'} />
+                <div className="min-w-0">
+                  <div className="font-semibold">{i.organisation_name} <span className="tabular font-normal text-muted-foreground">· {i.number}</span></div>
+                  <div className="text-xs text-muted-foreground">{dateOnly(i.period_start)} – {dateOnly(new Date(new Date(i.period_end).getTime() - 1))} · due {dateOnly(i.due_date)}</div>
+                </div>
               </Link>
               <div className="flex items-center gap-3">
-                <span className="font-heading font-bold">{gbp(i.total)}</span>
-                <InvoiceStatus status={i.status} />
+                <span className="tabular font-heading font-semibold">{gbp(i.total)}</span>
                 <SelectInput className="h-9 w-32 text-sm" value={i.status} onChange={(e) => upd.mutate({ id: i.id, status: e.target.value })}>
                   <option value="issued">Issued</option><option value="paid">Paid</option><option value="overdue">Overdue</option><option value="void">Void</option>
                 </SelectInput>

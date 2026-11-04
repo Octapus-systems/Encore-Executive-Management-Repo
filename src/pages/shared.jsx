@@ -20,12 +20,12 @@ export function Alerts() {
   const open = (n) => { if (!n.read_at) api.post(`/account/notifications/${n.id}/read`).then(() => qc.invalidateQueries({ queryKey: ['notifications'] })); };
   return (
     <div>
-      <PageHeader title="Alerts" actions={data?.some((n) => !n.read_at) && <Button variant="outline" className="rounded-full" onClick={() => readAll.mutate()}>Mark all read</Button>} />
+      <PageHeader title="Alerts" actions={data?.some((n) => !n.read_at) && <Button variant="outline" onClick={() => readAll.mutate()}>Mark all read</Button>} />
       {isLoading ? <PageLoader /> : !data?.length ? <Empty icon={Bell} title="No alerts yet" /> : (
         <div className="space-y-2">
           {data.map((n) => {
             const body = (
-              <div className={cn('flex gap-3 rounded-2xl border bg-white p-4 shadow-sm', !n.read_at && 'border-primary/40 bg-orange-50/50')}>
+              <div className={cn('flex gap-3 card-surface p-4 ', !n.read_at && 'border-primary/40 bg-orange-50/50')}>
                 <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', n.read_at ? 'bg-transparent' : 'bg-primary')} />
                 <div className="min-w-0 flex-1">
                   <div className="flex justify-between gap-2"><div className="font-semibold">{n.title}</div><div className="shrink-0 text-xs text-muted-foreground">{relative(n.created_at)}</div></div>

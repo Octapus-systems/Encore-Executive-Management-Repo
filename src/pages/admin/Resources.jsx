@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Briefcase, Car, Pencil, Plus, Users } from 'lucide-react';
+import { Accessibility, Baby, Briefcase, Car, Luggage, Mail, Pencil, Phone, Plus, Users } from 'lucide-react';
 import { api } from '@/lib/api';
 import { usePublicSettings } from '@/lib/auth';
-import { Empty, Field, Modal, PageHeader, PageLoader, Pill, PrimaryButton, SelectInput, TextArea, TextInput, useAction } from '@/components/common';
+import { Avatar, EntityCard, Empty, Field, Modal, PageHeader, thCls, PageLoader, Pill, PrimaryButton, SelectInput, TextArea, TextInput, useAction } from '@/components/common';
 import { Button } from '@/components/ui/button';
 
 const VSTATUS = { available: 'green', unavailable: 'amber', retired: 'grey' };
@@ -15,25 +15,25 @@ export function Fleet() {
   const [edit, setEdit] = useState(null);
   return (
     <div>
-      <PageHeader title="Fleet" subtitle="Company vehicles. Unavailable or retired vehicles cannot be assigned. No fleet limit."
-        actions={<Button className="rounded-full" onClick={() => setEdit({})}><Plus />Add vehicle</Button>} />
+      <PageHeader icon={Car} title="Fleet" subtitle="Your vehicles. Only available ones can be assigned."
+        actions={<Button onClick={() => setEdit({})}><Plus />Add vehicle</Button>} />
       {isLoading ? <PageLoader /> : !data.length ? <Empty icon={Car} title="No vehicles yet" /> : (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {data.map((v) => (
-            <div key={v.id} className="rounded-2xl border bg-white p-4 shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div><div className="font-heading font-semibold">{v.make} {v.model}</div><div className="text-sm text-muted-foreground">{v.colour} · {v.category}</div></div>
-                <span className="rounded-md border-2 border-ink bg-yellow-300 px-2 py-0.5 font-mono text-sm font-black">{v.registration}</span>
+          {data.map((v, i) => (
+            <EntityCard key={v.id} i={i} icon={Car} tone={v.status === 'available' ? 'dark' : 'grey'} onClick={() => setEdit(v)}
+              title={`${v.make} ${v.model}`} subtitle={`${v.colour} · ${v.category}`}
+              badge={<span className="shrink-0 rounded-md border border-neutral-900 bg-yellow-300 px-1.5 py-0.5 font-mono text-[11px] font-bold tracking-wide">{v.registration}</span>}>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[12.5px] text-muted-foreground">
+                <span className="inline-flex items-center gap-1.5" title="Seats"><Users className="h-3.5 w-3.5" />{v.seats} seats</span>
+                <span className="inline-flex items-center gap-1.5" title="Large cases"><Luggage className="h-3.5 w-3.5" />{v.luggage_capacity} cases</span>
+                {v.child_seat_capable ? <span className="inline-flex items-center gap-1.5"><Baby className="h-3.5 w-3.5" />Child seats</span> : null}
+                {v.accessible ? <span className="inline-flex items-center gap-1.5 text-sky-700"><Accessibility className="h-3.5 w-3.5" />Accessible</span> : null}
               </div>
-              <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-                <Pill tone={VSTATUS[v.status]}>{v.status}</Pill>
-                <Pill>{v.seats} seats</Pill><Pill>{v.luggage_capacity} cases</Pill>
-                {v.child_seat_capable ? <Pill>Child seats</Pill> : null}{v.accessible ? <Pill tone="blue">Accessible</Pill> : null}
-                {v.upcoming_jobs > 0 && <Pill tone="brand">{v.upcoming_jobs} active job(s)</Pill>}
+              <div className="mt-3 flex items-center justify-between border-t pt-3">
+                <Pill tone={VSTATUS[v.status]} className="capitalize">{v.status}</Pill>
+                {v.upcoming_jobs > 0 ? <span className="text-[12px] font-medium text-orange-700">{v.upcoming_jobs} active job{v.upcoming_jobs > 1 ? 's' : ''}</span> : <Pencil className="h-3.5 w-3.5 text-neutral-300 transition group-hover:text-neutral-600" />}
               </div>
-              {v.notes && <p className="mt-2 text-xs text-muted-foreground">{v.notes}</p>}
-              <Button size="sm" variant="ghost" className="mt-2 -ml-2" onClick={() => setEdit(v)}><Pencil />Edit</Button>
-            </div>
+            </EntityCard>
           ))}
         </div>
       )}
@@ -76,26 +76,26 @@ export function Drivers() {
   const toggle = useAction(({ id, ...body }) => api.patch(`/admin/drivers/${id}`, body), { success: 'Driver updated.', invalidate: ['drivers'] });
   return (
     <div>
-      <PageHeader title="Drivers" subtitle="Chauffeurs see only the journeys you assign to them. Drivers are added by management — there is no open registration."
-        actions={<div className="flex gap-2"><Button variant="outline" className="rounded-full" onClick={() => setEdit({ driver_type: 'temporary' })}><Plus />Temporary driver</Button><Button className="rounded-full" onClick={() => setEdit({})}><Plus />Add driver</Button></div>} />
+      <PageHeader icon={Users} title="Drivers" subtitle="Chauffeurs only see the journeys you assign them."
+        actions={<div className="flex gap-2"><Button variant="outline" onClick={() => setEdit({ driver_type: 'temporary' })}><Plus />Temporary driver</Button><Button onClick={() => setEdit({})}><Plus />Add driver</Button></div>} />
       {isLoading ? <PageLoader /> : !data.length ? <Empty icon={Users} title="No drivers yet" /> : (
-        <div className="overflow-hidden rounded-2xl border bg-white shadow-sm">
+        <div className="overflow-hidden card-surface">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
-              <thead className="bg-surface text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-3">Driver</th><th className="px-4 py-3">Contact</th><th className="px-4 py-3">Availability</th><th className="px-4 py-3">Active jobs</th><th className="px-4 py-3">Account</th><th /></tr></thead>
+            <table className="w-full min-w-[720px] text-[13px]">
+              <thead className={thCls}><tr><th className="px-5 py-2.5 font-medium">Driver</th><th className="px-4 py-2.5 font-medium">Contact</th><th className="px-4 py-2.5 font-medium">Availability</th><th className="px-4 py-2.5 font-medium">Jobs</th><th className="px-4 py-2.5 font-medium">Account</th><th className="w-10" /></tr></thead>
               <tbody className="divide-y">
-                {data.map((d) => (
-                  <tr key={d.id}>
-                    <td className="px-4 py-3"><div className="flex items-center gap-2 font-semibold">{d.name}{d.driver_type === 'temporary' && <Pill tone={d.access_expires_at && new Date(d.access_expires_at) < new Date() ? 'red' : 'blue'}>Temporary</Pill>}</div><div className="text-xs text-muted-foreground">{d.driver_type === 'temporary' && d.access_expires_at ? `Access until ${new Date(d.access_expires_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}` : d.licence_number || 'Licence not recorded'}</div></td>
-                    <td className="px-4 py-3"><div>{d.phone}</div><div className="text-xs text-muted-foreground">{d.email}</div></td>
+                {data.map((d, i) => (
+                  <tr key={d.id} onClick={() => setEdit(d)} style={{ animationDelay: `${Math.min(i, 12) * 30}ms` }} className="row-in group cursor-pointer hover:bg-neutral-50/80">
+                    <td className="px-5 py-3"><div className="flex items-center gap-3"><Avatar name={d.name} dark /><div><div className="flex items-center gap-2 font-semibold">{d.name}{d.driver_type === 'temporary' && <Pill tone={d.access_expires_at && new Date(d.access_expires_at) < new Date() ? 'red' : 'blue'}>Temporary</Pill>}</div><div className="text-xs text-muted-foreground">{d.driver_type === 'temporary' && d.access_expires_at ? `Access until ${new Date(d.access_expires_at).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}` : d.licence_number || 'Licence not recorded'}</div></div></div></td>
+                    <td className="px-4 py-3"><div className="flex items-center gap-1.5"><Phone className="h-3 w-3 text-neutral-400" />{d.phone}</div><div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Mail className="h-3 w-3" />{d.email}</div></td>
                     <td className="px-4 py-3">
-                      <button onClick={() => toggle.mutate({ id: d.id, driver_availability: d.driver_availability === 'available' ? 'unavailable' : 'available' })}>
-                        <Pill tone={d.driver_availability === 'available' ? 'green' : 'amber'}>{d.driver_availability}</Pill>
+                      <button title="Tap to switch" onClick={(e) => { e.stopPropagation(); toggle.mutate({ id: d.id, driver_availability: d.driver_availability === 'available' ? 'unavailable' : 'available' }); }}>
+                        <Pill tone={d.driver_availability === 'available' ? 'green' : 'amber'} className="capitalize">{d.driver_availability}</Pill>
                       </button>
                     </td>
-                    <td className="px-4 py-3">{d.upcoming_jobs}</td>
-                    <td className="px-4 py-3"><Pill tone={d.status === 'active' ? 'green' : 'red'}>{d.status}</Pill></td>
-                    <td className="px-4 py-3 text-right"><Button size="sm" variant="ghost" onClick={() => setEdit(d)}><Pencil />Edit</Button></td>
+                    <td className="tabular px-4 py-3 font-medium">{d.upcoming_jobs || <span className="text-neutral-300">0</span>}</td>
+                    <td className="px-4 py-3"><Pill tone={d.status === 'active' ? 'green' : 'red'} className="capitalize">{d.status}</Pill></td>
+                    <td className="pr-4 text-right"><Pencil className="ml-auto h-3.5 w-3.5 text-neutral-300 transition group-hover:text-neutral-600" /></td>
                   </tr>
                 ))}
               </tbody>
@@ -142,17 +142,19 @@ export function Operators() {
   const [edit, setEdit] = useState(null);
   return (
     <div>
-      <PageHeader title="External cover" subtitle="Trusted partner operators for exceptional demand. Recorded and assigned internally — they have no login."
-        actions={<Button className="rounded-full" onClick={() => setEdit({})}><Plus />Add operator</Button>} />
+      <PageHeader icon={Briefcase} title="External cover" subtitle="Partner operators for busy days. They don't sign in."
+        actions={<Button onClick={() => setEdit({})}><Plus />Add operator</Button>} />
       {isLoading ? <PageLoader /> : !data.length ? <Empty icon={Briefcase} title="No operators recorded" /> : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {data.map((o) => (
-            <div key={o.id} className="rounded-2xl border bg-white p-4 shadow-sm">
-              <div className="flex justify-between"><div className="font-heading font-semibold">{o.name}</div><Pill tone={o.active ? 'green' : 'grey'}>{o.active ? 'Active' : 'Inactive'}</Pill></div>
-              <div className="mt-1 text-sm text-muted-foreground">{o.contact_name} · {o.phone} · {o.email}</div>
-              {o.notes && <p className="mt-2 text-xs text-muted-foreground">{o.notes}</p>}
-              <Button size="sm" variant="ghost" className="mt-2 -ml-2" onClick={() => setEdit(o)}><Pencil />Edit</Button>
-            </div>
+          {data.map((o, i) => (
+            <EntityCard key={o.id} i={i} icon={Briefcase} tone={o.active ? 'violet' : 'grey'} onClick={() => setEdit(o)}
+              title={o.name} subtitle={o.contact_name} badge={<Pill tone={o.active ? 'green' : 'grey'}>{o.active ? 'Active' : 'Inactive'}</Pill>}>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-muted-foreground">
+                {o.phone && <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{o.phone}</span>}
+                {o.email && <span className="inline-flex items-center gap-1.5"><Mail className="h-3.5 w-3.5" />{o.email}</span>}
+              </div>
+              {o.notes && <p className="mt-2 text-[12px] text-muted-foreground">{o.notes}</p>}
+            </EntityCard>
           ))}
         </div>
       )}

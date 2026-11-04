@@ -20,7 +20,7 @@ function Stepper({ value, onChange, min = 0, max = 60 }) {
 
 function Section({ n, title, children }) {
   return (
-    <section className="rounded-2xl border bg-white p-5 shadow-sm">
+    <section className="card-surface p-5 ">
       <div className="mb-4 flex items-center gap-3">
         <span className="grid h-7 w-7 place-items-center rounded-full bg-ink text-xs font-bold text-white">{n}</span>
         <h2 className="font-heading text-base font-semibold">{title}</h2>

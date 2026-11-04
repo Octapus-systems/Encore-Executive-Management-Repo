@@ -5,7 +5,7 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 6%;
+    --foreground: 240 10% 8%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 6%;
     --popover: 0 0% 100%;
@@ -15,7 +15,7 @@
     --secondary: 240 11% 96%;
     --secondary-foreground: 0 0% 6%;
     --muted: 240 11% 96%;
-    --muted-foreground: 240 4% 46%;
+    --muted-foreground: 240 4% 44%;
     --accent: 240 11% 96%;
     --accent-foreground: 0 0% 6%;
     --destructive: 0 84% 60%;
@@ -26,19 +26,19 @@
     --warning-foreground: 0 0% 6%;
     --ink: 0 0% 6%;
     --charcoal: 240 4% 11%;
-    --surface: 240 11% 96%;
-    --border: 240 6% 91%;
-    --input: 240 6% 91%;
+    --surface: 240 9% 97.5%;
+    --border: 240 6% 92%;
+    --input: 240 6% 89%;
     --ring: 16 100% 56%;
     --chart-1: 16 100% 56%;
     --chart-2: 142 71% 45%;
     --chart-3: 38 92% 50%;
     --chart-4: 240 4% 11%;
     --chart-5: 0 84% 60%;
-    --radius: 1rem;
-    --font-heading: 'Poppins', ui-sans-serif, system-ui, sans-serif;
-    --font-body: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
-    --font-display: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+    --radius: 0.75rem;
+    --font-heading: 'Geist', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-body: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display: 'Geist', ui-sans-serif, system-ui, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 240 4% 11%;
@@ -93,6 +93,8 @@
 
   body {
     @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: 'ss01', 'cv11';
+    letter-spacing: -0.006em;
     -webkit-tap-highlight-color: transparent;
   }
 
@@ -101,6 +103,7 @@
   h3,
   h4 {
     @apply font-heading;
+    letter-spacing: -0.025em;
   }
 }
 
@@ -142,7 +145,7 @@
 
   .bg-surface,
   .hover\:bg-surface:hover {
-    background-color: #f5f5f7;
+    background-color: #f8f8fa;
   }
 
   .text-ink,
@@ -360,3 +363,16 @@ a.rounded-2xl, a.rounded-3xl, a[class*="rounded-[2rem]"] { transition: transform
 @media (hover: hover) {
   a.rounded-2xl:hover, a.rounded-3xl:hover, a[class*="rounded-[2rem]"]:hover { transform: translateY(-2px); box-shadow: 0 18px 40px -18px rgba(0,0,0,.35); }
 }
+
+/* ---------- management premium surface ---------- */
+.card-surface { background: #fff; border: 1px solid hsl(var(--border)); border-radius: 14px; box-shadow: 0 1px 2px rgba(16,16,20,.04), 0 1px 1px rgba(16,16,20,.02); }
+.tabular { font-variant-numeric: tabular-nums; }
+::selection { background: rgb(255 113 15 / .18); }
+.lift { transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, border-color .2s ease; }
+@media (hover: hover) { .lift:hover { transform: translateY(-2px); box-shadow: 0 12px 28px -14px rgba(16,16,20,.22); border-color: hsl(240 6% 84%); } }
+@keyframes row-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.row-in { animation: row-in .4s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes tab-ink { from { transform: scaleX(.3); opacity: 0; } to { transform: none; opacity: 1; } }
+.tab-ink { animation: tab-ink .3s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes float-y { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.float-y { animation: float-y 3.2s ease-in-out infinite; }

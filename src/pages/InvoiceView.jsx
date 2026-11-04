@@ -16,7 +16,7 @@ export default function InvoiceView({ back }) {
     <div className="mx-auto max-w-3xl">
       <div className="mb-4 flex items-center justify-between print:hidden">
         <Link to={back} className="text-sm font-semibold text-muted-foreground">← Invoices</Link>
-        <Button variant="outline" className="rounded-full" onClick={() => window.print()}><Printer />Print / save PDF</Button>
+        <Button variant="outline" onClick={() => window.print()}><Printer />Print / save PDF</Button>
       </div>
       <div className="rounded-2xl border bg-white p-8 shadow-sm print:border-0 print:shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-6">

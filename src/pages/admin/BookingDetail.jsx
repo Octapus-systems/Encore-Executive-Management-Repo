@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, Ban, Baby, Briefcase, CheckCircle2, ClipboardCheck, CreditCard, Eye, History, Link2, Lock, MessageSquare, Pencil,
-  Plus, Receipt, Send, Trash2, UserCheck, Users, XCircle,
+  Plus, Receipt, Send, Trash2, UserCheck, Users, XCircle, ChevronLeft, MoreHorizontal, Wrench, Car, Plane, Clock, Phone,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { celebrate, sparkle } from '@/lib/fx';
@@ -13,7 +13,7 @@ import {
 } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import {
-  Banner, ErrorState, Field, KV, Modal, PageLoader, PaymentBadge, Panel, Pill, PrimaryButton, SelectInput, StatusBadge, TextArea, TextInput,
+  IconTile, MoreMenu, Banner, ErrorState, Field, KV, Modal, PageLoader, PaymentBadge, Panel, Pill, PrimaryButton, SelectInput, StatusBadge, TextArea, TextInput,
   useAction,
 } from '@/components/common';
 import { BookingProgress, LegRoute, LegTimes, MessageThread } from '@/components/booking';
@@ -46,29 +46,39 @@ export default function BookingDetail() {
 
   return (
     <div className="space-y-5">
-      <Link to="/admin/bookings" className="text-sm font-semibold text-muted-foreground hover:text-ink">← Bookings</Link>
+      <Link to="/admin/bookings" className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition hover:-translate-x-0.5 hover:text-ink"><ChevronLeft className="h-4 w-4" />All bookings</Link>
 
-      <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <div className="card-surface animate-rise p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-heading text-2xl font-bold">{b.ref}</h1>
-              <StatusBadge status={b.status} admin className="text-sm" />
-              <PaymentBadge status={b.payment_status} />
-            </div>
-            <div className="mt-1 text-sm text-muted-foreground">
-              {JOURNEY_TYPES[b.journey_type]} · {b.customer.name}{b.organisation ? ` (${b.organisation.name})` : ''} · {b.customer.phone} · requested {shortDateTime(b.created_at)}
-              {b.created_by !== b.customer_id && <Pill tone="grey" className="ml-2">Created by staff</Pill>}
+          <div className="flex min-w-0 items-start gap-4">
+            <IconTile icon={b.journey_type === 'airport' ? Plane : Car} tone="dark" size="lg" className="hidden sm:grid" />
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="tabular font-heading text-[26px] font-semibold tracking-tight">{b.ref}</h1>
+                <StatusBadge status={b.status} admin />
+                <PaymentBadge status={b.payment_status} />
+              </div>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+                <span className="font-medium text-ink">{b.customer.name}{b.organisation ? ` · ${b.organisation.name}` : ''}</span>
+                <span className="inline-flex items-center gap-1.5"><Phone className="h-3.5 w-3.5" />{b.customer.phone}</span>
+                <span>{JOURNEY_TYPES[b.journey_type]}</span>
+                <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" />Requested {shortDateTime(b.created_at)}</span>
+                {b.created_by !== b.customer_id && <Pill tone="grey" dot={false}>Added by staff</Pill>}
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {['pending', 'clarification_needed', 'change_requested'].includes(b.status) && <Button variant="outline" className="rounded-full" onClick={() => review.mutate({})}><Eye />Start review</Button>}
-            {isPre && <Button variant="outline" className="rounded-full" onClick={() => setModal('clarify')}><MessageSquare />Ask customer</Button>}
-            {isPre && <Button className="rounded-full" onClick={() => setModal('confirm')}><CheckCircle2 />Confirm booking</Button>}
-            {(isPre || b.status === 'quote_declined') && <Button variant="outline" className="rounded-full text-red-600" onClick={() => setModal('reject')}><XCircle />Reject</Button>}
-            {!isPre && !['closed', 'cancelled_customer', 'cancelled_management', 'rejected', 'quote_declined'].includes(b.status) && <Button variant="outline" className="rounded-full text-red-600" onClick={() => setModal('cancel')}><Ban />Cancel</Button>}
-            {['completed', 'no_show', 'cancelled_customer', 'cancelled_management'].includes(b.status) && <Button className="rounded-full" onClick={() => close.mutate({})}><ClipboardCheck />Close &amp; reconcile</Button>}
-            <Button variant="ghost" className="rounded-full" onClick={() => setModal('override')}>Override status</Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {['pending', 'clarification_needed', 'change_requested'].includes(b.status) && <Button variant="outline" onClick={() => review.mutate({})}><Eye />Start review</Button>}
+            {isPre && <Button variant="outline" onClick={() => setModal('clarify')}><MessageSquare />Ask customer</Button>}
+            {isPre && <Button onClick={() => setModal('confirm')}><CheckCircle2 />Confirm booking</Button>}
+            {['completed', 'no_show', 'cancelled_customer', 'cancelled_management'].includes(b.status) && <Button onClick={() => close.mutate({})}><ClipboardCheck />Close &amp; reconcile</Button>}
+            <MoreMenu items={[
+              { label: 'Edit details', icon: Pencil, onClick: () => setModal('edit') },
+              { label: 'Change status', icon: Wrench, onClick: () => setModal('override') },
+              { divider: true },
+              (isPre || b.status === 'quote_declined') && { label: 'Reject request', icon: XCircle, danger: true, onClick: () => setModal('reject') },
+              !isPre && !['closed', 'cancelled_customer', 'cancelled_management', 'rejected', 'quote_declined'].includes(b.status) && { label: 'Cancel booking', icon: Ban, danger: true, onClick: () => setModal('cancel') },
+            ]} />
           </div>
         </div>
         <div className="mt-4"><BookingProgress status={b.status} /></div>
@@ -116,7 +126,7 @@ function FitPanel({ b, onEdit }) {
   if (b.child_seats) advice.push(`${b.child_seats} child seat(s) to be fitted.`);
   if (b.accessibility_needs) advice.push(`Accessibility: ${b.accessibility_needs}`);
   return (
-    <Panel title="Request & service fit" actions={<Button size="sm" variant="ghost" onClick={onEdit}><Pencil />Edit</Button>}>
+    <Panel title="Passengers & needs" actions={<Button size="sm" variant="ghost" onClick={onEdit}><Pencil />Edit</Button>}>
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
         <KV label="Lead passenger">{b.lead_passenger}</KV>
         <KV label="Contact on day">{b.contact_phone}</KV>
@@ -132,8 +142,8 @@ function FitPanel({ b, onEdit }) {
         {b.internal_notes && <KV label="Internal notes (management only)" className="col-span-2 md:col-span-4">{b.internal_notes}</KV>}
       </div>
       {advice.length > 0 && (
-        <div className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
-          <div className="mb-1 flex items-center gap-1.5 font-semibold"><AlertTriangle className="h-4 w-4" />Suitability check</div>
+        <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <div className="mb-1 flex items-center gap-1.5 font-semibold"><AlertTriangle className="h-4 w-4" />Check the vehicle fits</div>
           <ul className="list-disc pl-5">{advice.map((a) => <li key={a}>{a}</li>)}</ul>
         </div>
       )}
@@ -148,13 +158,12 @@ function RouteInfo({ b, leg, onChange }) {
   return (
     <div className="mt-3 space-y-2">
       <div className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl bg-surface px-3 py-2"><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Distance</div><div className="text-sm font-semibold">{miles(leg.distance_m) || '—'}</div></div>
-        <div className="rounded-xl bg-surface px-3 py-2"><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Drive time</div><div className="text-sm font-semibold">{driveTime(leg.duration_s) || '—'}</div></div>
-        <div className="rounded-xl bg-surface px-3 py-2"><div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">From base</div><div className="text-sm font-semibold">{miles(leg.base_distance_m) || '—'}{leg.base_duration_s ? <span className="font-normal text-muted-foreground"> · {driveTime(leg.base_duration_s)}</span> : null}</div></div>
+        <div className="rounded-xl bg-surface px-3 py-2"><div className="text-[11px] text-muted-foreground">Distance</div><div className="text-sm font-semibold">{miles(leg.distance_m) || '—'}</div></div>
+        <div className="rounded-xl bg-surface px-3 py-2"><div className="text-[11px] text-muted-foreground">Drive time</div><div className="text-sm font-semibold">{driveTime(leg.duration_s) || '—'}</div></div>
+        <div className="rounded-xl bg-surface px-3 py-2"><div className="text-[11px] text-muted-foreground">From base</div><div className="text-sm font-semibold">{miles(leg.base_distance_m) || '—'}{leg.base_duration_s ? <span className="font-normal text-muted-foreground"> · {driveTime(leg.base_duration_s)}</span> : null}</div></div>
       </div>
       {leg.route_error && <div className="text-xs text-amber-700">Route lookup: {leg.route_error}</div>}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-        <span>Planned for conflicts: {leg.est_minutes ? `${leg.est_minutes} min` : 'default'}</span>
         <a className="font-semibold text-primary" target="_blank" rel="noreferrer" href={mapsUrl}>Open in Maps</a>
         <button type="button" className="font-semibold text-primary disabled:opacity-50" disabled={recalc.isPending} onClick={() => recalc.mutate()}>{recalc.isPending ? 'Calculating…' : 'Recalculate'}</button>
       </div>
@@ -167,6 +176,7 @@ function LegPanel({ b, leg, onChange }) {
   const [assign, setAssign] = useState(false);
   const [statusTo, setStatusTo] = useState('');
   const [reason, setReason] = useState('');
+  const [fix, setFix] = useState(false);
   const conflicts = b.conflicts.find((c) => c.leg_id === leg.id)?.items || [];
   const unassign = useAction(() => api.post(`/bookings/${b.id}/legs/${leg.id}/unassign`), { success: 'Assignment removed.', onSuccess: onChange });
   const status = useAction((body) => api.post(`/bookings/${b.id}/legs/${leg.id}/status`, body), { success: 'Leg status overridden.', onSuccess: (r) => { onChange(r.booking); setStatusTo(''); setReason(''); } });
@@ -180,7 +190,7 @@ function LegPanel({ b, leg, onChange }) {
           <div className="mt-2"><LegTimes leg={leg} /></div>
         </div>
         <div className="rounded-xl bg-surface p-4">
-          <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Allocation</div>
+          <div className="flex items-center gap-2 text-[12px] font-medium text-muted-foreground"><UserCheck className="h-3.5 w-3.5" />Chauffeur & car</div>
           {leg.status === 'unassigned' ? (
             <p className="mt-1 text-sm text-muted-foreground">{ASSIGNABLE.includes(b.status) ? 'Not yet assigned.' : 'Confirm the booking before assigning.'}</p>
           ) : leg.external_operator_id ? (
@@ -191,16 +201,20 @@ function LegPanel({ b, leg, onChange }) {
           {leg.conflict_override_reason && <div className="mt-2 text-xs text-amber-700">Conflict overridden: {leg.conflict_override_reason}</div>}
           {conflicts.length > 0 && <div className="mt-2 space-y-0.5">{conflicts.map((c) => <div key={c.leg_id} className="text-xs font-medium text-red-600"><AlertTriangle className="mr-1 inline h-3 w-3" />{c.reason} — {c.ref} {shortDateTime(c.pickup_at)}</div>)}</div>}
           <div className="mt-3 flex flex-wrap gap-2">
-            {canAssign && <Button size="sm" className="rounded-full" onClick={() => setAssign(true)}><UserCheck />{leg.status === 'unassigned' ? 'Assign' : 'Reassign'}</Button>}
-            {leg.status === 'assigned' && <Button size="sm" variant="ghost" className="rounded-full" onClick={() => unassign.mutate()}>Unassign</Button>}
+            {canAssign && <Button size="sm" onClick={() => setAssign(true)}><UserCheck />{leg.status === 'unassigned' ? 'Assign' : 'Reassign'}</Button>}
+            {leg.status === 'assigned' && <Button size="sm" variant="ghost" onClick={() => unassign.mutate()}>Unassign</Button>}
           </div>
         </div>
       </div>
-      {leg.status !== 'unassigned' && (
-        <div className="mt-4 flex flex-wrap items-end gap-2 border-t pt-4">
+      {leg.status !== 'unassigned' && !fix && (
+        <button type="button" onClick={() => setFix(true)} className="mt-4 inline-flex items-center gap-1.5 text-[12px] font-medium text-muted-foreground hover:text-ink"><Wrench className="h-3.5 w-3.5" />Journey status wrong? Fix it</button>
+      )}
+      {leg.status !== 'unassigned' && fix && (
+        <div className="animate-rise mt-4 flex flex-wrap items-end gap-2 border-t pt-4">
           <Field label="Correct journey status" className="w-44"><SelectInput value={statusTo} onChange={(e) => setStatusTo(e.target.value)}><option value="">Choose…</option>{['assigned', 'on_the_way', 'arrived', 'started', 'completed'].filter((s) => s !== leg.status).map((s) => <option key={s} value={s}>{LEG_STATUS[s]}</option>)}</SelectInput></Field>
           <Field label="Reason" className="min-w-[200px] flex-1"><TextInput value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Driver phone offline — confirmed by call" /></Field>
-          <Button variant="outline" className="h-11 rounded-xl" disabled={!statusTo} onClick={() => status.mutate({ status: statusTo, reason })}>Apply override</Button>
+          <Button variant="ghost" className="h-10" onClick={() => setFix(false)}>Cancel</Button>
+          <Button className="h-10" disabled={!statusTo} onClick={() => status.mutate({ status: statusTo, reason })}>Save</Button>
         </div>
       )}
       {assign && <AssignModal b={b} leg={leg} onClose={() => setAssign(false)} onSaved={(nb) => { onChange(nb); setAssign(false); }} />}
@@ -290,7 +304,7 @@ function QuotePanel({ b, onChange }) {
   const send = useAction((qid) => api.post(`/bookings/${b.id}/quotes/${qid}/send`), { success: 'Quotation sent to customer.', onSuccess: onChange });
   const tone = { draft: 'grey', sent: 'blue', change_requested: 'amber', accepted: 'green', declined: 'red', superseded: 'grey' };
   return (
-    <Panel title="Quotation" actions={canQuote && <Button size="sm" className="rounded-full" onClick={() => setOpen(true)}><Plus />{b.quotes.length ? 'Revise' : 'Prepare quote'}</Button>}>
+    <Panel title="Quotation" actions={canQuote && <Button size="sm" onClick={() => setOpen(true)}><Plus />{b.quotes.length ? 'Revise' : 'Prepare quote'}</Button>}>
       {!b.quotes.length ? <p className="text-sm text-muted-foreground">No quotation yet. Review the request, then prepare a tailored price.</p> : (
         <div className="space-y-3">
           {b.quotes.map((x) => (
@@ -335,7 +349,7 @@ function QuoteModal({ b, base, onClose, onSaved }) {
       footer={<><Button variant="outline" className="h-11 rounded-xl" disabled={save.isPending} onClick={() => submit(false)}>Save draft</Button><PrimaryButton loading={save.isPending} onClick={() => submit(true)}><Send className="h-4 w-4" />Send {gbp(finalTotal)}</PrimaryButton></>}>
       <div className="grid gap-5 md:grid-cols-2">
         <div className="space-y-3 rounded-xl bg-surface p-4">
-          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Internal pricing</div>
+          <div className="text-[12px] font-semibold text-muted-foreground">Internal pricing</div>
           {b.legs.some((l) => l.distance_m || l.base_distance_m) && (
             <div className="space-y-1 rounded-lg bg-white px-3 py-2 text-xs">
               {b.legs.map((l) => (
@@ -358,7 +372,7 @@ function QuoteModal({ b, base, onClose, onSaved }) {
           <Field label="Internal notes"><TextArea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
         </div>
         <div className="space-y-3">
-          <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground">What the customer sees</div>
+          <div className="text-[12px] font-semibold text-muted-foreground">What the customer sees</div>
           {lines.map((l, i) => (
             <div key={i} className="flex gap-2">
               <TextInput value={l.label} onChange={(e) => setLines(lines.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
@@ -405,9 +419,9 @@ function PaymentPanel({ b, onChange, accepted }) {
         {b.invoice && <div className="flex justify-between"><span className="text-muted-foreground">Invoice</span><Link className="font-semibold text-primary" to={`/admin/invoices/${b.invoice.id}`}>{b.invoice.number} ({b.invoice.status})</Link></div>}
         {b.payment_link && <div className="truncate text-xs text-muted-foreground">Link: <a className="text-primary" href={b.payment_link} target="_blank" rel="noreferrer">{b.payment_link}</a></div>}
         <div className="flex flex-wrap gap-2 pt-1">
-          <Button size="sm" className="rounded-full" onClick={() => setModal('pay')}><Receipt />Record payment</Button>
-          <Button size="sm" variant="outline" className="rounded-full" onClick={() => setModal('link')}><Link2 />Payment link</Button>
-          <Button size="sm" variant="ghost" className="rounded-full" onClick={() => setModal('override')}>Override</Button>
+          <Button size="sm" onClick={() => setModal('pay')}><Receipt />Record payment</Button>
+          <Button size="sm" variant="outline" onClick={() => setModal('link')}><Link2 />Payment link</Button>
+          <Button size="sm" variant="ghost" onClick={() => setModal('override')}>Override</Button>
         </div>
         {b.payments.length > 0 && (
           <div className="divide-y rounded-xl border">
@@ -513,6 +527,7 @@ function ClarifyModal({ open, onClose, m }) {
 
 function ConfirmModal({ open, onClose, b, accepted, m }) {
   const [reason, setReason] = useState('');
+  const [fix, setFix] = useState(false);
   const [arr, setArr] = useState(b.payment_arrangement);
   return (
     <Modal open={open} onOpenChange={onClose} title="Confirm this booking" description="Only management confirmation makes this a booking. The customer is notified immediately."
@@ -544,6 +559,7 @@ function ReasonModal({ open, onClose, title, description, label, cta, danger, re
 function OverrideModal({ open, onClose, b, m }) {
   const [status, setStatus] = useState(b.status);
   const [reason, setReason] = useState('');
+  const [fix, setFix] = useState(false);
   return (
     <Modal open={open} onOpenChange={onClose} title="Override booking status" description="Use for corrections such as marking a no-show or expiry. The change and reason are recorded."
       footer={<PrimaryButton loading={m.isPending} disabled={!reason.trim() || status === b.status} onClick={() => m.mutate({ status, reason })}>Apply override</PrimaryButton>}>
