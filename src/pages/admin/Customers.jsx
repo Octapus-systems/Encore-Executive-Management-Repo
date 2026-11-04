@@ -61,6 +61,11 @@ function CustomerList() {
                     <SelectInput className="h-9 text-sm" value={c.organisation_id || ''} onChange={(e) => upd.mutate({ id: c.id, organisation_id: e.target.value ? Number(e.target.value) : null })}>
                       <option value="">Private customer</option>{(orgs.data || []).map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
                     </SelectInput>
+                    {c.organisation_id && (
+                      <label className="mt-1.5 flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground" title="Company admins invite and remove their own colleagues in the app">
+                        <input type="checkbox" className="h-3.5 w-3.5 accent-[#FF5A1F]" checked={c.org_role === 'admin'} onChange={(e) => upd.mutate({ id: c.id, org_role: e.target.checked ? 'admin' : 'member' })} />Company admin
+                      </label>
+                    )}
                   </td>
                   <td className="tabular px-4 py-3 font-medium">{c.bookings}</td>
                   <td className="px-4 py-3">

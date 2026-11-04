@@ -290,11 +290,12 @@ export function Avatar({ name = '', className, dark }) {
 }
 
 /** Card for a record in a grid (vehicle, operator, account). Whole card opens the editor. */
-export function EntityCard({ icon, tone = 'grey', title, subtitle, badge, children, onClick, i = 0, aside }) {
+export function EntityCard({ icon, tone = 'grey', title, subtitle, badge, children, onClick, i = 0, aside, cover }) {
   return (
     <div role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined} onClick={onClick} onKeyDown={(e) => onClick && e.key === 'Enter' && onClick()}
       style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
-      className={cn('card-surface animate-rise group flex flex-col p-4 text-left', onClick && 'lift cursor-pointer')}>
+      className={cn('card-surface animate-rise group flex flex-col overflow-hidden p-4 text-left', onClick && 'lift cursor-pointer')}>
+      {cover}
       <div className="flex items-start gap-3">
         {icon && <IconTile icon={icon} tone={tone} />}
         <div className="min-w-0 flex-1">

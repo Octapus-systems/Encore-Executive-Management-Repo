@@ -12,6 +12,7 @@ import Bookings from '@/pages/admin/Bookings';
 import BookingDetail from '@/pages/admin/BookingDetail';
 import NewBooking from '@/pages/admin/NewBooking';
 import Calendar from '@/pages/admin/Calendar';
+import LiveMap from '@/pages/admin/LiveMap';
 import { Fleet, Drivers, Operators } from '@/pages/admin/Resources';
 import Customers from '@/pages/admin/Customers';
 import { Payments, Invoices } from '@/pages/admin/Money';
@@ -34,6 +35,7 @@ export default function App() {
                 <Route path="bookings/new" element={<NewBooking />} />
                 <Route path="bookings/:id" element={<BookingDetail />} />
                 <Route path="calendar" element={<Calendar />} />
+                <Route path="live" element={<LiveMap />} />
                 <Route path="fleet" element={<Fleet />} />
                 <Route path="drivers" element={<Drivers />} />
                 <Route path="operators" element={<Operators />} />

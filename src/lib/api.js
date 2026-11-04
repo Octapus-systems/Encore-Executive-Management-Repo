@@ -35,7 +35,22 @@ async function request(method, path, body) {
   return data;
 }
 
+/** Upload a file/blob as the raw request body (e.g. a vehicle photo). */
+async function upload(path, blob) {
+  const token = tokenStore.get();
+  let res;
+  try {
+    res = await fetch(`/api${path}`, { method: 'POST', headers: { 'Content-Type': blob.type, ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: blob });
+  } catch {
+    throw new ApiError(0, { error: 'Could not reach Encore Executive. Check your connection — the photo was not saved.' });
+  }
+  const data = await res.json().catch(() => null);
+  if (!res.ok) throw new ApiError(res.status, data);
+  return data;
+}
+
 export const api = {
+  upload,
   get: (p) => request('GET', p),
   post: (p, b = {}) => request('POST', p, b),
   patch: (p, b = {}) => request('PATCH', p, b),

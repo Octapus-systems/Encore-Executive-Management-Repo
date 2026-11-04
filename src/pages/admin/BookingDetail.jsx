@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Link, useLocation, useParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle, Ban, Baby, Briefcase, CheckCircle2, ClipboardCheck, CreditCard, Eye, History, Link2, Lock, MessageSquare, Pencil,
-  Plus, Receipt, Send, Trash2, UserCheck, Users, XCircle, ChevronLeft, MoreHorizontal, Wrench, Car, Plane, Clock, Phone,
+  Plus, Receipt, Repeat, Send, Trash2, UserCheck, Users, XCircle, ChevronLeft, Wrench, Car, Plane, Clock, Phone,
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { celebrate, sparkle } from '@/lib/fx';
@@ -25,8 +26,10 @@ const ASSIGNABLE = ['confirmed', 'driver_assigned', 'on_the_way', 'arrived', 'st
 export default function BookingDetail() {
   const { id } = useParams();
   const qc = useQueryClient();
+  const loc = useLocation();
   const q = useQuery({ queryKey: ['booking', id, 'admin'], queryFn: () => api.get(`/bookings/${id}`), refetchInterval: 8000 });
   const [modal, setModal] = useState(null);
+  const [quoteOpen, setQuoteOpen] = useState(false);
   const set = (b) => { qc.setQueryData(['booking', id, 'admin'], b); ['bookings', 'dashboard', 'calendar', 'payments'].forEach((k) => qc.invalidateQueries({ queryKey: [k] })); };
   const useAct = (path, opts = {}) => useAction((body) => api.post(`/bookings/${id}${path}`, body), { ...opts, onSuccess: (b, v) => { set(b.booking || b); setModal(null); opts.onSuccess?.(b, v); } });
 
@@ -36,7 +39,7 @@ export default function BookingDetail() {
   const reject = useAct('/reject', { success: 'Request rejected.' });
   const cancel = useAct('/cancel', { success: 'Booking cancelled.' });
   const close = useAct('/close', { success: 'Booking closed.', onError: (e) => { if (e.body.code === 'unpaid') { setModal('close-unpaid'); return true; } } });
-  const override = useAct('/status', { success: 'Status updated.' });
+  const override = useAct('/status', { success: 'Status updated.', onError: (e) => { if (e.body?.code === 'needs_quote') { setModal(null); setQuoteOpen(true); toast.info('Add the amount and send the quotation — the status updates when it is sent.'); return true; } } });
 
   if (q.isLoading) return <PageLoader />;
   if (q.error) return <ErrorState error={q.error} />;
@@ -46,7 +49,7 @@ export default function BookingDetail() {
 
   return (
     <div className="space-y-5">
-      <Link to="/admin/bookings" className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition hover:-translate-x-0.5 hover:text-ink"><ChevronLeft className="h-4 w-4" />All bookings</Link>
+      <Link to={loc.state?.from || '/admin/bookings'} className="inline-flex items-center gap-1 text-[13px] font-medium text-muted-foreground transition hover:-translate-x-0.5 hover:text-ink"><ChevronLeft className="h-4 w-4" />{loc.state?.fromLabel ? `Back to ${loc.state.fromLabel}` : 'All bookings'}</Link>
 
       <div className="card-surface animate-rise p-5">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -75,6 +78,7 @@ export default function BookingDetail() {
             <MoreMenu items={[
               { label: 'Edit details', icon: Pencil, onClick: () => setModal('edit') },
               { label: 'Change status', icon: Wrench, onClick: () => setModal('override') },
+              !['closed', 'cancelled_customer', 'cancelled_management', 'rejected', 'quote_declined', 'expired', 'no_show', 'completed'].includes(b.status) && { label: 'Repeat booking', icon: Repeat, onClick: () => setModal('repeat') },
               { divider: true },
               (isPre || b.status === 'quote_declined') && { label: 'Reject request', icon: XCircle, danger: true, onClick: () => setModal('reject') },
               !isPre && !['closed', 'cancelled_customer', 'cancelled_management', 'rejected', 'quote_declined'].includes(b.status) && { label: 'Cancel booking', icon: Ban, danger: true, onClick: () => setModal('cancel') },
@@ -85,6 +89,12 @@ export default function BookingDetail() {
         {b.status === 'quote_accepted' && <Banner tone="blue" className="mt-4" icon={CheckCircle2} title="Customer accepted the quotation">Accepting does not confirm the booking. Check availability, then confirm.</Banner>}
         {b.status === 'change_requested' && <Banner tone="amber" className="mt-4" icon={MessageSquare} title="Customer requested a change">See their message below and issue a revised quotation.</Banner>}
         {b.status === 'clarification_needed' && <Banner tone="amber" className="mt-4" title="Waiting for the customer to reply to your clarification request." />}
+        {['cancelled_customer', 'cancelled_management'].includes(b.status) && (
+          <Banner tone="red" className="mt-4" icon={XCircle}
+            title={`Cancelled by ${b.status === 'cancelled_customer' ? 'the customer' : b.cancelled_by_name || 'Encore'}${b.cancelled_at ? ` · ${shortDateTime(b.cancelled_at)}` : ''}`}>
+            {b.cancel_reason ? <>Reason: <b>“{b.cancel_reason}”</b></> : 'No reason given.'}
+          </Banner>
+        )}
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[1.35fr_1fr]">
@@ -97,7 +107,25 @@ export default function BookingDetail() {
           </Panel>
         </div>
         <div className="space-y-5">
-          <QuotePanel b={b} onChange={set} />
+          {b.series?.length > 1 && (
+            <Panel title={`Repeating series · ${b.series.length} journeys`}>
+              <div className="max-h-64 space-y-1 overflow-y-auto">
+                {b.series.map((x) => (
+                  <Link key={x.id} to={`/admin/bookings/${x.id}`} className={cn('flex items-center justify-between rounded-lg px-2 py-1.5 text-sm hover:bg-neutral-50', x.id === b.id && 'bg-orange-50 font-semibold')}>
+                    <span>{x.ref} · {shortDateTime(x.pickup_at)}</span><StatusBadge status={x.status} admin />
+                  </Link>
+                ))}
+              </div>
+            </Panel>
+          )}
+          <QuotePanel b={b} onChange={set} open={quoteOpen} setOpen={setQuoteOpen} />
+          {b.review && (
+            <Panel title="Customer rating">
+              <div className="flex items-center gap-1">{[1, 2, 3, 4, 5].map((n) => <span key={n} className={n <= b.review.rating ? 'text-amber-400' : 'text-neutral-200'}>★</span>)}<span className="ml-2 text-sm font-semibold">{b.review.rating}/5</span></div>
+              {b.review.comment && <p className="mt-2 text-sm">“{b.review.comment}”</p>}
+              <p className="mt-1 text-xs text-muted-foreground">{b.review.driver_name ? `Chauffeur: ${b.review.driver_name}` : ''}</p>
+            </Panel>
+          )}
           <PaymentPanel b={b} onChange={set} accepted={accepted} />
           <NotificationsPanel items={b.notifications} />
           <ActivityPanel items={b.activity} />
@@ -111,7 +139,8 @@ export default function BookingDetail() {
         description="Management may cancel at any stage. The assigned driver is notified." />
       <Modal open={modal === 'close-unpaid'} onOpenChange={() => setModal(null)} title="Close with payment outstanding?" description={`Payment status is "${PAYMENT_STATUS[b.payment_status]?.label}". Closing records that the account was closed unpaid.`}
         footer={<PrimaryButton loading={close.isPending} onClick={() => close.mutate({ allow_unpaid: true })}>Close anyway</PrimaryButton>} />
-      <OverrideModal open={modal === 'override'} onClose={() => setModal(null)} b={b} m={override} />
+      <OverrideModal open={modal === 'override'} onClose={() => setModal(null)} b={b} m={override} onQuote={() => { setModal(null); setQuoteOpen(true); }} />
+      {modal === 'repeat' && <RepeatModal b={b} accepted={accepted} onClose={() => setModal(null)} onDone={(nb) => { set(nb); setModal(null); }} />}
       {modal === 'edit' && <EditModal b={b} onClose={() => setModal(null)} onSaved={(nb) => { set(nb); setModal(null); }} />}
     </div>
   );
@@ -135,6 +164,8 @@ function FitPanel({ b, onEdit }) {
         <KV label={<span className="inline-flex items-center gap-1"><Baby className="h-3 w-3" />Child seats</span>}>{b.child_seats}</KV>
         <KV label="Preferred vehicle">{b.preferred_category || 'No preference'}</KV>
         {b.flight_number && <KV label="Flight">{b.flight_number}</KV>}
+        {b.po_number && <KV label="PO number">{b.po_number}</KV>}
+        {b.cost_centre && <KV label="Cost centre">{b.cost_centre}</KV>}
         {b.duration_hours && <KV label="Hours requested">{b.duration_hours}</KV>}
         {b.passenger_names && <KV label="Other passengers" className="col-span-2">{b.passenger_names}</KV>}
         {b.special_instructions && <KV label="Special instructions" className="col-span-2 md:col-span-4">{b.special_instructions}</KV>}
@@ -297,13 +328,15 @@ function AssignModal({ b, leg, onClose, onSaved }) {
 }
 
 // ---------------- Quotation ----------------
-function QuotePanel({ b, onChange }) {
+function QuotePanel({ b, onChange, open, setOpen }) {
   const latest = b.quotes.find((x) => x.status !== 'superseded');
   const canQuote = PRE.includes(b.status);
-  const [open, setOpen] = useState(false);
+  const panel = useRef(null);
+  useEffect(() => { if (open) panel.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [open]);
   const send = useAction((qid) => api.post(`/bookings/${b.id}/quotes/${qid}/send`), { success: 'Quotation sent to customer.', onSuccess: onChange });
   const tone = { draft: 'grey', sent: 'blue', change_requested: 'amber', accepted: 'green', declined: 'red', superseded: 'grey' };
   return (
+    <div ref={panel}>
     <Panel title="Quotation" actions={canQuote && <Button size="sm" onClick={() => setOpen(true)}><Plus />{b.quotes.length ? 'Revise' : 'Prepare quote'}</Button>}>
       {!b.quotes.length ? <p className="text-sm text-muted-foreground">No quotation yet. Review the request, then prepare a tailored price.</p> : (
         <div className="space-y-3">
@@ -328,6 +361,7 @@ function QuotePanel({ b, onChange }) {
       )}
       {open && <QuoteModal b={b} base={latest} onClose={() => setOpen(false)} onSaved={(nb) => { onChange(nb); setOpen(false); }} />}
     </Panel>
+    </div>
   );
 }
 
@@ -556,16 +590,31 @@ function ReasonModal({ open, onClose, title, description, label, cta, danger, re
   );
 }
 
-function OverrideModal({ open, onClose, b, m }) {
+function OverrideModal({ open, onClose, b, m, onQuote }) {
   const [status, setStatus] = useState(b.status);
   const [reason, setReason] = useState('');
-  const [fix, setFix] = useState(false);
+  // A quotation status needs a priced quotation: send that through the quote form instead.
+  const hasSent = b.quotes.some((x) => ['sent', 'change_requested', 'accepted'].includes(x.status));
+  const hasAccepted = b.quotes.some((x) => x.status === 'accepted');
+  const needsQuote = (status === 'quote_sent' && !hasSent) || (status === 'quote_accepted' && !hasAccepted);
+  const canQuote = PRE.includes(b.status);
   return (
     <Modal open={open} onOpenChange={onClose} title="Override booking status" description="Use for corrections such as marking a no-show or expiry. The change and reason are recorded."
-      footer={<PrimaryButton loading={m.isPending} disabled={!reason.trim() || status === b.status} onClick={() => m.mutate({ status, reason })}>Apply override</PrimaryButton>}>
+      footer={needsQuote
+        ? (canQuote ? <PrimaryButton onClick={onQuote}><Send className="h-4 w-4" />Prepare the quotation</PrimaryButton> : null)
+        : <PrimaryButton loading={m.isPending} disabled={!reason.trim() || status === b.status} onClick={() => m.mutate({ status, reason })}>Apply override</PrimaryButton>}>
       <div className="space-y-3">
         <SelectInput value={status} onChange={(e) => setStatus(e.target.value)}>{BOOKING_STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS[s].admin}</option>)}</SelectInput>
-        <Field label="Reason" required><TextInput value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+        {needsQuote ? (
+          <Banner tone="amber" icon={AlertTriangle}>
+            {status === 'quote_sent'
+              ? 'The customer would see “Quotation ready” with no amount. Prepare the quotation with its price and send it — the status changes to Quote sent automatically.'
+              : 'There is no accepted quotation. Send a priced quotation first; it becomes accepted when the customer accepts it in the app.'}
+            {!canQuote && ' First change the status back to Under review so a quotation can be prepared.'}
+          </Banner>
+        ) : (
+          <Field label="Reason" required><TextInput value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
+        )}
       </div>
     </Modal>
   );
@@ -619,3 +668,46 @@ function EditModal({ b, onClose, onSaved }) {
   );
 }
 
+
+const WEEKDAYS = [[1, 'Mon'], [2, 'Tue'], [3, 'Wed'], [4, 'Thu'], [5, 'Fri'], [6, 'Sat'], [0, 'Sun']];
+/** Repeat this journey on chosen weekdays (same time) until an end date — for regular clients. */
+function RepeatModal({ b, accepted, onClose, onDone }) {
+  const first = b.legs[0];
+  const startDay = new Date(new Date(first.pickup_at).toLocaleString('en-US', { timeZone: 'Europe/London' })).getDay();
+  const [days, setDays] = useState([startDay]);
+  const [until, setUntil] = useState(() => { const d = new Date(first.pickup_at); d.setDate(d.getDate() + 56); return d.toISOString().slice(0, 10); });
+  const [confirm, setConfirm] = useState(!!accepted);
+  const save = useAction((body) => api.post(`/bookings/${b.id}/repeat`, body), {
+    success: (r) => `${r.created.length} journeys ${r.confirmed ? 'booked and confirmed' : 'created as requests'} — the customer has been told.`,
+    onSuccess: (r) => onDone(r.booking),
+  });
+  // Rough preview of how many journeys will be created.
+  const count = (() => {
+    let n = 0; const end = new Date(`${until}T23:59:59`); const d = new Date(first.pickup_at);
+    for (let i = 1; i <= 200; i++) { const x = new Date(d.getTime() + i * 86400000); if (x > end) break; if (days.includes(x.getDay())) n++; }
+    return Math.min(n, 60);
+  })();
+  const time = new Date(first.pickup_at).toLocaleTimeString('en-GB', { timeZone: 'Europe/London', hour: '2-digit', minute: '2-digit' });
+  return (
+    <Modal open onOpenChange={onClose} title={`Repeat ${b.ref}`} description={`Same journey, passengers and car at ${time} (UK time) on the days you choose.`}
+      footer={<PrimaryButton loading={save.isPending} disabled={!days.length || !count} onClick={() => save.mutate({ days, until, confirm })}>Create {count || ''} journey{count === 1 ? '' : 's'}</PrimaryButton>}>
+      <div className="space-y-4">
+        <Field label="Repeat on">
+          <div className="flex flex-wrap gap-1.5">
+            {WEEKDAYS.map(([d, l]) => (
+              <button key={d} type="button" onClick={() => setDays((x) => (x.includes(d) ? x.filter((y) => y !== d) : [...x, d]))}
+                className={cn('h-9 w-12 rounded-full border text-sm font-semibold transition', days.includes(d) ? 'border-ink bg-ink text-white' : 'bg-white hover:bg-neutral-50')}>{l}</button>
+            ))}
+          </div>
+        </Field>
+        <Field label="Until"><TextInput type="date" value={until} min={new Date(first.pickup_at).toISOString().slice(0, 10)} onChange={(e) => setUntil(e.target.value)} /></Field>
+        <label className={cn('flex items-start gap-2.5 rounded-xl border p-3 text-sm', !accepted && 'opacity-60')}>
+          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#FF5A1F]" disabled={!accepted} checked={confirm && !!accepted} onChange={(e) => setConfirm(e.target.checked)} />
+          <span><span className="block font-medium text-ink">Confirm them with the same price{accepted ? ` (${gbp(accepted.total)})` : ''}</span>
+            <span className="block text-xs text-muted-foreground">{accepted ? 'Each copy is confirmed straight away. Assign chauffeurs as usual.' : 'This booking has no accepted quote yet, so the copies are created as requests to quote.'}</span></span>
+        </label>
+        <p className="text-sm text-muted-foreground">{count ? <>Creates <b className="text-ink">{count}</b> journey{count === 1 ? '' : 's'}{count === 60 ? ' (maximum per batch)' : ''}.</> : 'No days fall in this range.'}</p>
+      </div>
+    </Modal>
+  );
+}

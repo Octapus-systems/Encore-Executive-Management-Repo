@@ -393,3 +393,12 @@ a.rounded-2xl, a.rounded-3xl, a[class*="rounded-[2rem]"] { transition: transform
   .break-inside-avoid { break-inside: avoid; }
   thead { display: table-header-group; }
 }
+
+/* Live map markers */
+.dispatch-car { position: relative; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9999px;
+  background: var(--c, #10B981); color: #fff; font: 700 11px/1 'Inter', system-ui, sans-serif; letter-spacing: .02em;
+  border: 3px solid #fff; box-shadow: 0 6px 16px rgba(0,0,0,.25); cursor: default; transition: background .3s ease; }
+.dispatch-car i { position: absolute; inset: -7px; border-radius: 9999px; border: 2px solid var(--c); opacity: .5; animation: dispatch-ping 1.8s ease-out infinite; }
+@keyframes dispatch-ping { from { transform: scale(.7); opacity: .6; } to { transform: scale(1.35); opacity: 0; } }
+.dispatch-job { width: 16px; height: 16px; border-radius: 4px; background: #141416; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,.3); }
+@media (prefers-reduced-motion: reduce) { .dispatch-car i { animation: none; } }

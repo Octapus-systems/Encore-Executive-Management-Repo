@@ -2,10 +2,7 @@ import { useLiveUpdates } from '@/lib/live';
 import { useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Activity, BarChart3, Bell, MessagesSquare, Briefcase, Building2, CalendarDays, Car, ClipboardList, FileText, LayoutDashboard, LogOut, Menu, MessageSquare,
-  Plus, Receipt, Settings, UserCog, Users, X,
-} from 'lucide-react';
+import { Activity, BarChart3, Bell, MessagesSquare, Briefcase, Building2, CalendarDays, Car, ClipboardList, FileText, LayoutDashboard, LogOut, Menu, MessageSquare, Plus, Receipt, Settings, UserCog, Users, X, Radio } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { cn } from '@/lib/utils';
@@ -40,6 +37,7 @@ const NAV = [
     { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
     { to: '/admin/bookings', label: 'Bookings', icon: ClipboardList },
     { to: '/admin/calendar', label: 'Calendar', icon: CalendarDays },
+    { to: '/admin/live', label: 'Live map', icon: Radio },
     { to: '/admin/conversations', label: 'Messages', icon: MessagesSquare, badge: 'messages' },
   ] },
   { group: 'Resources', items: [
@@ -65,6 +63,7 @@ const TITLES = Object.fromEntries(NAV.flatMap((g) => g.items.map((i) => [i.to, i
 function pageTitle(path) {
   if (path.startsWith('/admin/bookings/new')) return 'New booking';
   if (path.startsWith('/admin/bookings/')) return 'Booking details';
+  if (path.startsWith('/admin/inbox')) return 'Alerts';
   const hit = Object.keys(TITLES).filter((k) => path === k || path.startsWith(k + '/')).sort((a, b) => b.length - a.length)[0];
   return TITLES[hit] || 'Command Center';
 }
