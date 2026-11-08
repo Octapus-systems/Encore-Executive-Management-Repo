@@ -170,7 +170,7 @@ function DispatchMap({ drivers, unassigned, focus }) {
       fitted.current = true;
       const b = new maplibregl.LngLatBounds();
       for (const mk of markers.current.values()) b.extend(mk.getLngLat());
-      m.fitBounds(b, { padding: 70, maxZoom: 13, duration: 0 });
+      m.fitBounds(b, { padding: { top: 80, bottom: 110, left: 70, right: 70 }, maxZoom: 13, duration: 0 });
     }
   }, [drivers, unassigned, ready]);
 
@@ -181,7 +181,7 @@ function DispatchMap({ drivers, unassigned, focus }) {
     if (!m || !maplibregl || !markers.current.size) return;
     const b = new maplibregl.LngLatBounds();
     for (const mk of markers.current.values()) b.extend(mk.getLngLat());
-    m.fitBounds(b, { padding: 70, maxZoom: 13, duration: 700 });
+    m.fitBounds(b, { padding: { top: 80, bottom: 110, left: 70, right: 70 }, maxZoom: 13, duration: 700 });
   };
 
   return (

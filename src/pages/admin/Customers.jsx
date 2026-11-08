@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Building2, Check, Copy, KeyRound, Mail, Plus, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
-import { api } from '@/lib/api';
+import { Building2, Check, Copy, FileCheck2, FileText, KeyRound, Mail, Plus, ShieldCheck, UserPlus, Users, X } from 'lucide-react';
+import { api, tokenStore } from '@/lib/api';
 import { dateOnly } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { Avatar, EntityCard, IconTile, Tabs, thCls, Empty, Field, Modal, PageHeader, PageLoader, Pill, PrimaryButton, SelectInput, TextArea, TextInput, useAction } from '@/components/common';
 import { Button } from '@/components/ui/button';
 
-const TABS = [{ id: 'customers', label: 'Customers', icon: Users }, { id: 'organisations', label: 'Corporate accounts', icon: Building2 }, { id: 'invitations', label: 'Invitations', icon: Mail }];
+const TABS = [{ id: 'customers', label: 'Customers', icon: Users }, { id: 'requests', label: 'Corporate requests', icon: FileCheck2 }, { id: 'organisations', label: 'Corporate accounts', icon: Building2 }, { id: 'invitations', label: 'Invitations', icon: Mail }];
 
 export default function Customers() {
   const [tab, setTab] = useState('customers');
@@ -17,6 +17,7 @@ export default function Customers() {
       <PageHeader icon={Building2} title="Customers" subtitle="Who can book, and which company they belong to." />
       <Tabs items={TABS} value={tab} onChange={setTab} />
       {tab === 'customers' && <CustomerList />}
+      {tab === 'requests' && <CorporateRequests />}
       {tab === 'organisations' && <Organisations />}
       {tab === 'invitations' && <Invitations />}
     </div>
@@ -160,5 +161,98 @@ function Invitations() {
         </div>
       )}
     </div>
+  );
+}
+
+// ---------- Corporate account requests (upgrade from a personal account) ----------
+const REQ_TONE = { pending: 'amber', approved: 'green', rejected: 'red' };
+async function openDoc(reqId, file) {
+  const win = window.open('', '_blank');
+  try {
+    const res = await fetch(`/api/admin/corporate-requests/${reqId}/files/${file.id}`, { headers: { Authorization: `Bearer ${tokenStore.get()}` } });
+    if (!res.ok) throw new Error('failed');
+    const url = URL.createObjectURL(await res.blob());
+    if (win) win.location.href = url; else window.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch { win?.close(); toast.error('Could not open this document.'); }
+}
+
+function CorporateRequests() {
+  const { data, isLoading } = useQuery({ queryKey: ['corporate-requests'], queryFn: () => api.get('/admin/corporate-requests') });
+  const [open, setOpen] = useState(null);
+  if (isLoading) return <PageLoader />;
+  if (!data.length) return <Empty icon={FileCheck2} title="No corporate requests yet" />;
+  return (
+    <div className="grid gap-3 md:grid-cols-2">
+      {data.map((r) => (
+        <button key={r.id} type="button" onClick={() => setOpen(r)} className="card-surface p-4 text-left transition hover:shadow-md">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0"><div className="truncate text-[15px] font-semibold text-ink">{r.company_name}</div><div className="text-xs text-muted-foreground">Reg. {r.registration_number} · {r.business_email}</div></div>
+            <Pill tone={REQ_TONE[r.status]} className="capitalize">{r.status}</Pill>
+          </div>
+          <div className="mt-2 text-[13px] text-muted-foreground">{r.requester_name}{r.requester_role ? ` · ${r.requester_role}` : ''} · sent {dateOnly(r.created_at)} · {r.files.length} document{r.files.length === 1 ? '' : 's'}</div>
+        </button>
+      ))}
+      {open && <RequestModal r={open} onClose={() => setOpen(null)} />}
+    </div>
+  );
+}
+
+function InfoRow({ k, v }) {
+  return v ? <div className="flex justify-between gap-4 py-1.5 text-sm"><span className="text-muted-foreground">{k}</span><span className="text-right font-medium text-ink">{v}</span></div> : null;
+}
+
+function RequestModal({ r, onClose }) {
+  const [note, setNote] = useState('');
+  const [terms, setTerms] = useState('Monthly consolidated invoice, 30 days');
+  const [useBiz, setUseBiz] = useState(true);
+  const opts = { invalidate: ['corporate-requests', 'customers', 'organisations'], onSuccess: onClose };
+  const approve = useAction(() => api.post(`/admin/corporate-requests/${r.id}/approve`, { note, payment_terms: terms, use_business_email: useBiz }), { ...opts, success: `${r.company_name} approved — the customer has been told.` });
+  const reject = useAction(() => api.post(`/admin/corporate-requests/${r.id}/reject`, { note }), { ...opts, success: 'Request rejected — the customer has been told why.' });
+  const pending = r.status === 'pending';
+  return (
+    <Modal open onOpenChange={onClose} wide title={r.company_name}
+      description={pending ? 'Check the details and documents, then approve or reject.' : `${r.status === 'approved' ? 'Approved' : 'Rejected'} by ${r.reviewed_by_name || 'Encore'} on ${dateOnly(r.reviewed_at)}.`}
+      footer={pending && (
+        <div className="flex w-full flex-wrap justify-end gap-2">
+          <Button variant="outline" disabled={!note.trim() || reject.isPending} onClick={() => reject.mutate()}><X />Reject</Button>
+          <PrimaryButton loading={approve.isPending} onClick={() => approve.mutate()}><Check className="h-4 w-4" />Approve &amp; create account</PrimaryButton>
+        </div>
+      )}>
+      <div className="grid gap-5 md:grid-cols-2">
+        <div>
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Company</div>
+          <div className="divide-y">
+            <InfoRow k="Registration no." v={r.registration_number} /><InfoRow k="Business email" v={r.business_email} /><InfoRow k="Business phone" v={r.business_phone} />
+            <InfoRow k="Domain" v={r.company_domain} /><InfoRow k="Billing address" v={r.billing_address} />
+          </div>
+          <div className="mb-1 mt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Requested by</div>
+          <div className="divide-y">
+            <InfoRow k="Name" v={r.requester_name} /><InfoRow k="Job title" v={r.requester_role} /><InfoRow k="Mobile" v={r.requester_phone} />
+            <InfoRow k="Current account" v={`${r.user_name} · ${r.user_email || r.user_phone}`} />
+          </div>
+          {r.company_domain && r.business_email && !r.business_email.endsWith(`@${r.company_domain}`) && (
+            <p className="mt-3 rounded-lg bg-amber-50 p-2.5 text-xs text-amber-800">The business email does not use the company domain ({r.company_domain}). Worth checking.</p>
+          )}
+        </div>
+        <div>
+          <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Documents</div>
+          <div className="space-y-2">
+            {r.files.map((f) => (
+              <button key={f.id} type="button" onClick={() => openDoc(r.id, f)} className="flex w-full items-center gap-3 rounded-xl border p-3 text-left hover:bg-neutral-50">
+                <FileText className="h-5 w-5 text-primary" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-medium">{f.name}</span><span className="text-xs text-muted-foreground">{f.kind_label}</span></span><span className="text-xs font-semibold text-primary">Open</span>
+              </button>
+            ))}
+          </div>
+          {pending ? (
+            <div className="mt-4 space-y-3">
+              <Field label="Billing terms"><TextInput value={terms} onChange={(e) => setTerms(e.target.value)} /></Field>
+              <label className="flex items-start gap-2 text-sm"><input type="checkbox" className="mt-0.5 h-4 w-4 accent-[#FF5A1F]" checked={useBiz} onChange={(e) => setUseBiz(e.target.checked)} /><span>Sign in with the business email<span className="block text-xs text-muted-foreground">Their login becomes {r.business_email}. Password stays the same.</span></span></label>
+              <Field label="Note to customer" hint="Required to reject; optional when approving"><TextArea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Please upload a clearer copy of the certificate of incorporation." /></Field>
+            </div>
+          ) : r.admin_note && <p className="mt-4 rounded-lg bg-neutral-50 p-3 text-sm">“{r.admin_note}”</p>}
+        </div>
+      </div>
+    </Modal>
   );
 }
